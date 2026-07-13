@@ -1,3 +1,5 @@
+"use server";
+
 import bcrypt from "bcryptjs";
 
 import { connectDB } from "@/db/connect";
@@ -17,27 +19,35 @@ export async function registerUser(data: RegisterInput) {
                 message: validatedData.error.issues[0].message,
             };
         }
+
         const { name, email, password } = validatedData.data;
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return {
                 success: false,
-                    message: "User already exists"
-                }
-            }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const user = await User.create({
-                name,
-                email,
-                password: hashedPassword,
-            });
-
-            return {
-                success: true,
-                message: "User registered successfully",
-                user,
+                message: "User already exists",
             };
-        } catch (error) {
-            throw error;
         }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+        });
+
+        const { password: _password, ...userWithoutPassword } = user.toObject();
+
+        return {
+            success: true,
+            message: "User registered successfully",
+            user: JSON.parse(JSON.stringify(userWithoutPassword)),
+        };
+    } catch (error: any) {
+        console.error("Error registering user:", error);
+        return {
+            success: false,
+            message: error?.message || "An unexpected error occurred during registration.",
+        };
     }
+}

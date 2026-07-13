@@ -1,8 +1,9 @@
+"use server";
+
 import { connectDB } from "@/db/connect";
 import bcrypt from "bcryptjs";
 import { User } from "@/models/User";
 import { loginSchema, LoginInput } from "@/validators/auth.schema";
-
 
 export async function loginUser(data: LoginInput) {
     try {
@@ -30,14 +31,17 @@ export async function loginUser(data: LoginInput) {
                 message: "Invalid email or password",
             };
         }
-        const { password: _, ...userWithoutPassword } = user.toObject();
+        const { password: _password, ...userWithoutPassword } = user.toObject();
         return {
             success: true,
             message: "User logged in successfully",
-            data: userWithoutPassword,
+            data: JSON.parse(JSON.stringify(userWithoutPassword)),
         };
-    }
-    catch (error) {
-        throw error;
+    } catch (error) {
+        console.error("Error logging in user:", error);
+        return {
+            success: false,
+            message: "An unexpected error occurred during login.",
+        };
     }
 }

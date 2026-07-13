@@ -18,7 +18,13 @@ const UserSchema = new Schema(
 
         password: {
             type: String,
-            required: true,
+            required: false,
+        },
+
+        authProvider: {
+            type: String,
+            enum: ["credentials", "google"],
+            default: "credentials",
         },
 
         profileImage: {
@@ -35,5 +41,9 @@ const UserSchema = new Schema(
         timestamps: true,
     }
 );
+
+if (process.env.NODE_ENV !== "production" && models.User) {
+    delete models.User;
+}
 
 export const User = models.User || model("User", UserSchema);
