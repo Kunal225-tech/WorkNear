@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import AuthProvider from "../components/providers/SessionProvider";
-import { ThemeProvider } from "../components/providers/ThemeProvider";
-import InteractiveGridBackground from "../components/ui/InteractiveGridBackground";
+import { Inter } from "next/font/google";
+import Providers from "@/components/providers/SessionProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "WorkNear - Local Professional Services",
-  description: "Find and book verified neighborhood service professionals and local gigs on demand.",
+  title: "WorkNear — Find Local Jobs & Hire Nearby Talent",
+  description:
+    "WorkNear connects you with verified local service professionals. Post jobs, find nearby gigs, and get work done in your neighborhood.",
 };
 
 export default function RootLayout({
@@ -26,19 +22,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body suppressHydrationWarning className="min-h-full flex flex-col relative z-10">
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} h-full antialiased`}>
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans">
         <ThemeProvider>
-          <AuthProvider>
-            <InteractiveGridBackground />
-            <div className="relative z-10 flex flex-col min-h-screen">
-              {children}
-            </div>
-          </AuthProvider>
+          <Providers>
+            {children}
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              toastOptions={{
+                duration: 4000,
+              }}
+            />
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

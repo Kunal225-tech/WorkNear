@@ -32,6 +32,29 @@ const UserSchema = new Schema(
             default: "",
         },
 
+        phone: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        bio: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        location: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+
+        skills: {
+            type: [String],
+            default: [],
+        },
+
         isVerified: {
             type: Boolean,
             default: false,

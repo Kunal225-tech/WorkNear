@@ -61,4 +61,8 @@ const JobSchema = new Schema(
     }
 );
 
+if (process.env.NODE_ENV !== "production" && models.Job) {
+    delete models.Job;
+}
+
 export const Job = models.Job || model("Job", JobSchema);

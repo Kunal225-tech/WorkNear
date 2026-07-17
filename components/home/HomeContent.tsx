@@ -1,11 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface RealJob {
+    _id: string;
+    title: string;
+    category: string;
+    location: string;
+    payment: number;
+    requiredDate: string;
+    status: string;
+}
 
 export default function HomeContent() {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
+    const [realJobs, setRealJobs] = useState<RealJob[]>([]);
+    const [loadingJobs, setLoadingJobs] = useState(true);
+
+    useEffect(() => {
+        const fetchRealJobs = async () => {
+            try {
+                const res = await fetch("/api/jobs");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.data)) {
+                        setRealJobs(data.data.slice(0, 6)); // top 6 open gigs
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading live proximity jobs:", error);
+            } finally {
+                setLoadingJobs(false);
+            }
+        };
+
+        fetchRealJobs();
+    }, []);
 
     const categories = [
         { name: "Plumbing", icon: "🔧", desc: "Pipe leaks, tap replacement, bathroom fittings" },
@@ -29,6 +63,7 @@ export default function HomeContent() {
             payoutType: "Fixed",
             requiredDate: "Today, 4:00 PM",
             status: "Urgent",
+            isReal: false,
         },
         {
             id: "job-2",
@@ -40,6 +75,7 @@ export default function HomeContent() {
             payoutType: "Fixed",
             requiredDate: "Tomorrow, 10:00 AM",
             status: "Open",
+            isReal: false,
         },
         {
             id: "job-3",
@@ -51,12 +87,37 @@ export default function HomeContent() {
             payoutType: "Fixed",
             requiredDate: "Within 24 Hours",
             status: "Open",
+            isReal: false,
         },
     ];
 
-    const filteredJobs = activeCategory === "All" 
-        ? sampleJobs 
-        : sampleJobs.filter(j => j.category.toLowerCase().includes(activeCategory.toLowerCase()));
+    const displayJobs = realJobs.length > 0
+        ? realJobs.map((j) => ({
+              id: j._id,
+              title: j.title,
+              category: j.category,
+              location: j.location,
+              distance: "< 3 km away",
+              payout: `₹${j.payment}`,
+              payoutType: "Fixed",
+              requiredDate: new Date(j.requiredDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+              status: j.status === "open" ? "Open" : j.status,
+              isReal: true,
+          }))
+        : sampleJobs;
+
+    const filteredJobs = activeCategory === "All"
+        ? displayJobs
+        : displayJobs.filter((j) => j.category.toLowerCase().includes(activeCategory.toLowerCase()));
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.push(`/jobs?search=${encodeURIComponent(searchQuery)}`);
+        } else {
+            router.push("/jobs");
+        }
+    };
 
     return (
         <main className="bg-transparent text-zinc-900 dark:text-zinc-100">
@@ -83,7 +144,7 @@ export default function HomeContent() {
 
                             {/* Urban Company style Search Box */}
                             <div className="mt-8 max-w-xl">
-                                <div className="flex flex-col sm:flex-row items-center gap-2 rounded-xl border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                                <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-2 rounded-xl border border-zinc-300 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
                                     <div className="flex w-full items-center gap-3 px-3 py-1.5 text-zinc-400">
                                         <svg className="h-5 w-5 shrink-0 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -96,22 +157,22 @@ export default function HomeContent() {
                                             className="w-full bg-transparent text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none dark:text-zinc-100"
                                         />
                                     </div>
-                                    <Link
-                                        href={`/post-job?category=${encodeURIComponent(searchQuery)}`}
+                                    <button
+                                        type="submit"
                                         className="w-full sm:w-auto shrink-0 rounded-lg bg-zinc-900 px-6 py-3 text-center text-xs font-semibold text-white transition hover:bg-zinc-800 dark:bg-teal-600 dark:hover:bg-teal-700"
                                     >
                                         Find Professional
-                                    </Link>
-                                </div>
+                                    </button>
+                                </form>
                                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                                     <span className="font-semibold text-zinc-700 dark:text-zinc-300">Popular:</span>
-                                    <button onClick={() => setSearchQuery("Plumbing")} className="hover:text-teal-600 underline">Plumber</button>
+                                    <Link href="/jobs?category=Plumbing" className="hover:text-teal-600 underline">Plumber</Link>
                                     <span>{" • "}</span>
-                                    <button onClick={() => setSearchQuery("Electrician")} className="hover:text-teal-600 underline">Electrician</button>
+                                    <Link href="/jobs?category=Electrician" className="hover:text-teal-600 underline">Electrician</Link>
                                     <span>{" • "}</span>
-                                    <button onClick={() => setSearchQuery("Home Cleaning")} className="hover:text-teal-600 underline">Deep Cleaning</button>
+                                    <Link href="/jobs?category=Cleaning" className="hover:text-teal-600 underline">Deep Cleaning</Link>
                                     <span>{" • "}</span>
-                                    <button onClick={() => setSearchQuery("AC & Appliance")} className="hover:text-teal-600 underline">AC Servicing</button>
+                                    <Link href="/jobs?category=Appliance" className="hover:text-teal-600 underline">AC Servicing</Link>
                                 </div>
                             </div>
                         </div>
@@ -190,7 +251,7 @@ export default function HomeContent() {
                             </p>
                         </div>
                         <Link
-                            href="/post-job"
+                            href="/jobs"
                             className="mt-4 sm:mt-0 text-xs font-semibold text-teal-600 hover:underline dark:text-teal-400"
                         >
                             View All 20+ Categories &rarr;
@@ -201,7 +262,7 @@ export default function HomeContent() {
                         {categories.map((cat) => (
                             <Link
                                 key={cat.name}
-                                href={`/post-job?category=${encodeURIComponent(cat.name)}`}
+                                href={`/jobs?category=${encodeURIComponent(cat.name)}`}
                                 className="group flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-teal-500 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-teal-500"
                             >
                                 <div>
@@ -216,7 +277,7 @@ export default function HomeContent() {
                                     </p>
                                 </div>
                                 <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 text-[11px] font-semibold text-zinc-400 group-hover:text-teal-600 dark:border-zinc-800 dark:group-hover:text-teal-400">
-                                    <span>Book or Post Task</span>
+                                    <span>Browse Gigs</span>
                                     <span>&rarr;</span>
                                 </div>
                             </Link>
@@ -225,26 +286,28 @@ export default function HomeContent() {
                 </div>
             </section>
 
-            {/* 3. RECENT OPEN GIGS NEAR YOU (Live task sample showcase) */}
+            {/* 3. RECENT OPEN GIGS NEAR YOU (Live task showcase) */}
             <section className="border-t border-zinc-200/80 bg-transparent py-16 dark:border-zinc-800/80">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8">
                         <div>
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-2.5 py-0.5 text-[11px] font-semibold text-teal-800 dark:bg-teal-900/60 dark:text-teal-300">
                                 <span className="h-1.5 w-1.5 rounded-full bg-teal-600 animate-pulse"></span>
-                                Live Proximity Feed Sample
+                                <span>{realJobs.length > 0 ? "Live Proximity Feed" : "Proximity Feed Sample"}</span>
                             </div>
                             <h2 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
                                 Recent Open Gigs Near You
                             </h2>
                             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                                Here is how tasks posted by local homeowners appear to nearby workers right now.
+                                {realJobs.length > 0
+                                    ? "Live tasks currently posted by local households right in your radius."
+                                    : "Here is how tasks posted by local homeowners appear to nearby workers right now."}
                             </p>
                         </div>
 
                         {/* Category Filter Pills */}
                         <div className="mt-4 flex flex-wrap gap-2 sm:mt-0">
-                            {["All", "Plumbing", "Home Cleaning", "AC & Appliance"].map((tab) => (
+                            {["All", "Plumbing", "Cleaning", "Electrician"].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveCategory(tab)}
@@ -262,7 +325,11 @@ export default function HomeContent() {
 
                     {/* Job Cards Grid */}
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                        {filteredJobs.map((job) => (
+                        {loadingJobs && realJobs.length === 0 ? (
+                            [1, 2, 3].map((i) => (
+                                <div key={i} className="h-56 rounded-xl bg-zinc-200 dark:bg-zinc-800/60 animate-pulse" />
+                            ))
+                        ) : filteredJobs.map((job) => (
                             <div
                                 key={job.id}
                                 className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
@@ -301,14 +368,24 @@ export default function HomeContent() {
                                         </div>
                                     </div>
                                     <Link
-                                        href="/login"
+                                        href={job.isReal ? `/jobs/${job.id}` : "/jobs"}
                                         className="rounded-md bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 dark:bg-teal-600 dark:hover:bg-teal-700"
                                     >
-                                        Apply for Gig
+                                        View &amp; Apply
                                     </Link>
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="mt-10 text-center">
+                        <Link
+                            href="/jobs"
+                            className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-6 py-3 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                        >
+                            <span>Browse All Open Gigs Directory ({realJobs.length > 0 ? `${realJobs.length}+ Live Gigs` : "All Categories"})</span>
+                            <span>&rarr;</span>
+                        </Link>
                     </div>
                 </div>
             </section>

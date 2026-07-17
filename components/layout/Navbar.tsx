@@ -78,19 +78,21 @@ export default function Navbar({ session }: NavbarProps) {
                             pathname === "/" ? "font-semibold text-teal-600 dark:text-teal-400" : ""
                         }`}
                     >
-                        Explore Services
+                        Home
+                    </Link>
+                    <Link
+                        href="/jobs"
+                        className={`transition hover:text-zinc-900 dark:hover:text-zinc-100 ${
+                            pathname?.startsWith("/jobs") ? "font-semibold text-teal-600 dark:text-teal-400" : ""
+                        }`}
+                    >
+                        Browse Gigs
                     </Link>
                     <Link
                         href="/#categories"
                         className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
                     >
                         Categories
-                    </Link>
-                    <Link
-                        href="/#how-it-works"
-                        className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                    >
-                        How it Works
                     </Link>
                     <Link
                         href="/#trust"
@@ -113,14 +115,23 @@ export default function Navbar({ session }: NavbarProps) {
 
                     {session ? (
                         <div className="flex items-center gap-3">
-                            <div className="hidden md:flex flex-col text-right">
+                            <Link
+                                href="/profile"
+                                className="hidden md:flex flex-col text-right hover:opacity-80 transition"
+                            >
                                 <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                                     {session.user?.name || "User"}
                                 </span>
                                 <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium">
-                                    Verified Member
+                                    Profile &amp; Dashboard &rarr;
                                 </span>
-                            </div>
+                            </Link>
+                            <Link
+                                href="/my-jobs"
+                                className="hidden sm:inline-flex rounded-md bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100 dark:bg-teal-950/60 dark:text-teal-300 dark:hover:bg-teal-900/80"
+                            >
+                                My Tasks
+                            </Link>
                             <button
                                 onClick={() => signOut()}
                                 className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"

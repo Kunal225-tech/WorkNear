@@ -4,8 +4,13 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { connectDB } from "./db/connect";
 import { User } from "./models/User";
+import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    secret: process.env.AUTH_SECRET || "e7dabbcad0322ec47556dc960dc468168507f504950da0ffda1c8d8be959cfdb",
+    session: {
+        strategy: "jwt",
+    },
     providers: [
         Credentials({
             credentials: {
@@ -31,19 +36,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     email: user.email,
                     name: user.name,
                     image: user.profileImage,
-                }
+                };
             },
         }),
 
         Google({
-            clientId: process.env.AUTH_GOOGLE_ID!,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+            clientId: process.env.AUTH_GOOGLE_ID || "",
+            clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
         }),
     ],
 
-    session: {
-        strategy: "jwt",
-    },
     callbacks: {
         async signIn({ user, account }) {
             if (account?.provider === "google" && user.email) {
@@ -89,6 +91,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 (session.user as typeof session.user & { id?: string }).id = token.id as string;
             }
             return session;
-        }
+        },
     },
 });

@@ -2,39 +2,43 @@ import { NextRequest } from "next/server";
 import { createJob } from "@/actions/jobs/createJob";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { createJobSchema } from "@/validators/job.schema";
-import { auth } from "@/auth";
+import { getApiAuthUser } from "@/lib/api-auth";
+import { getJobs } from "@/actions/jobs/getJobs";
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const session = await auth();
+        const authUser = await getApiAuthUser(req);
 
-        let userId = session?.user?.id;
-        if (!userId) {
-            const authHeader = req.headers.get("authorization") || req.headers.get("x-user-id");
-            if (authHeader) {
-                userId = authHeader.replace("Bearer ", "");
-            }
-        }
-
-        if (!userId) {
+        if (!authUser || !authUser.id) {
             return errorResponse("Unauthorized. Please log in or provide 'x-user-id' / 'Authorization: Bearer <userId>' header.", 401);
         }
 
         const validatedData = createJobSchema.safeParse(body);
 
         if (!validatedData.success) {
-            return errorResponse(validatedData.error.issues[0].message);
+            return errorResponse(validatedData.error.issues[0].message, 400);
         }
 
-        const result = await createJob(validatedData.data, userId);
+        const result = await createJob(validatedData.data, authUser.id);
         if (!result.success) {
-            return errorResponse(result.message);
+            return errorResponse(result.message, 400);
         }
 
         return successResponse("Job created successfully", result.job, 201);
     } catch (error) {
-        console.error(error);
+        console.error("Error creating job API:", error);
+        return errorResponse("Internal Server Error", 500);
+    }
+}
+
+export async function GET() {
+    try {
+        const jobs = await getJobs();
+        return successResponse("Jobs fetched successfully", jobs, 200);
+    }
+    catch (error) {
+        console.error("Error fetching jobs API:", error);
         return errorResponse("Internal Server Error", 500);
     }
 }
