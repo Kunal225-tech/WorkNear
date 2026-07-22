@@ -1,4 +1,4 @@
-"use server";
+
 
 import { connectDB } from "@/db/connect";
 import bcrypt from "bcryptjs";

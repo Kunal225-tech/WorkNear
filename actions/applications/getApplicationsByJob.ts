@@ -1,4 +1,4 @@
-"use server";
+
 
 import { connectDB } from "@/db/connect";
 import { Application } from "@/models/Application";
@@ -9,7 +9,7 @@ export async function getApplicationsByJob(jobId: string) {
     const apps = await Application.find({
         job: jobId,
     })
-        .populate("applicant", "name profileImage email")
+        .populate("applicant", "name profileImage email averageRating reviewCount skills")
         .sort({ createdAt: -1 })
         .lean();
 

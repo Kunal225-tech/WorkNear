@@ -13,8 +13,31 @@ export interface User {
   profileImage?: string;
   authProvider?: "credentials" | "google";
   isVerified?: boolean;
+  savedJobs?: string[];
   createdAt: string;
   updatedAt?: string;
+}
+
+// ─── Review ─────────────────────────────────────────────
+export interface Review {
+  _id: string;
+  job: Job | string;
+  reviewer: User | string;
+  reviewee: User | string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface CreateReviewInput {
+  jobId: string;
+  revieweeId: string;
+  rating: number;
+  comment: string;
+}
+
+export interface ToggleSaveResponse {
+  saved: boolean;
 }
 
 // ─── Job ────────────────────────────────────────────────
@@ -31,6 +54,7 @@ export interface Job {
   requiredDate: string;
   status: JobStatus;
   postedBy: User | string;
+  images?: string[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -62,6 +86,7 @@ export interface CreateJobInput {
   payment: number;
   location: string;
   requiredDate: string;
+  images?: string[];
 }
 
 export interface UpdateJobInput {
@@ -71,6 +96,7 @@ export interface UpdateJobInput {
   payment?: number;
   location?: string;
   requiredDate?: string;
+  images?: string[];
 }
 
 export interface LoginInput {
@@ -109,6 +135,13 @@ export function getApplicantUser(applicant: User | string): User | null {
 export function getApplicationJob(job: Job | string): Job | null {
   if (typeof job === "object" && job !== null && "_id" in job) {
     return job;
+  }
+  return null;
+}
+
+export function getReviewerUser(reviewer: User | string): User | null {
+  if (typeof reviewer === "object" && reviewer !== null && "_id" in reviewer) {
+    return reviewer;
   }
   return null;
 }

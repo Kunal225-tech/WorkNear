@@ -39,6 +39,18 @@ const JobSchema = new Schema(
             trim: true,
         },
 
+        locationCoordinates: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                required: false,
+            },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                required: false,
+            }
+        },
+
         requiredDate: {
             type: Date,
             required: true,
@@ -55,11 +67,17 @@ const JobSchema = new Schema(
             enum: JOB_STATUS,
             default: "open",
         },
+
+        images: [{
+            type: String,
+        }],
     },
     {
         timestamps: true,
     }
 );
+
+JobSchema.index({ locationCoordinates: "2dsphere" });
 
 if (process.env.NODE_ENV !== "production" && models.Job) {
     delete models.Job;

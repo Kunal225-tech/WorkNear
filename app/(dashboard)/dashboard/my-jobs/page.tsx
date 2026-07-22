@@ -72,7 +72,7 @@ export default function MyJobsPage() {
             <Link href="/dashboard/post-job">
               <Button className="rounded-xl gap-2">
                 <PlusCircle size={16} />
-                <span>Create Your First Job</span>
+                <span>Post Your First Job</span>
               </Button>
             </Link>
           }
@@ -161,9 +161,10 @@ export default function MyJobsPage() {
       <ConfirmDialog
         open={jobToDelete !== null}
         onOpenChange={(open) => !open && setJobToDelete(null)}
-        title="Delete Posted Job?"
-        description={`Are you sure you want to permanently delete "${jobToDelete?.title || "this job"}"? This action cannot be undone and any pending applications will be removed.`}
-        confirmLabel="Yes, Delete Job"
+        title="Delete this job?"
+        description="This action cannot be undone."
+        confirmLabel="Delete Job"
+        loadingLabel="Deleting..."
         variant="destructive"
         isLoading={deleteMutation.isPending}
         onConfirm={handleDelete}

@@ -3,6 +3,10 @@ import { getApiAuthUser } from "@/lib/api-auth";
 import { getApplicationById } from "@/actions/applications/getApplicationById";
 import { rejectApplication } from "@/actions/applications/rejectApplication";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { sendMail } from "@/lib/mailer";
+import { applicationRejectedEmail } from "@/lib/email-templates";
+import { User } from "@/models/User";
+import { connectDB } from "@/db/connect";
 
 interface RouteParams {
   params: Promise<{
@@ -36,6 +40,8 @@ export async function PATCH(
     const job = application.job as {
       postedBy?: mongoose.Types.ObjectId | string;
       status?: string;
+      title?: string;
+      _id?: string;
     };
 
     const postedById = typeof job.postedBy === "object" && job.postedBy !== null && "_id" in job.postedBy
@@ -64,6 +70,28 @@ export async function PATCH(
     }
 
     const updatedApplication = await rejectApplication(id);
+
+    // ── Send email notification to rejected applicant ──
+    try {
+      await connectDB();
+      const applicant = application.applicant as any;
+      const applicantId = typeof applicant === "object" && "_id" in applicant
+        ? String(applicant._id)
+        : String(applicant);
+
+      const applicantUser = await User.findById(applicantId).select("email name").lean() as any;
+
+      if (applicantUser?.email && job.title) {
+        const { subject, html } = applicationRejectedEmail(
+          applicantUser.name || "there",
+          job.title,
+          String(job._id || "")
+        );
+        await sendMail({ to: applicantUser.email, subject, html });
+      }
+    } catch (emailErr) {
+      console.error("[Email] Failed to send rejection notification:", emailErr);
+    }
 
     return successResponse(
       "Application rejected successfully",

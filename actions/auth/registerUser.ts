@@ -1,4 +1,4 @@
-"use server";
+
 
 import bcrypt from "bcryptjs";
 
@@ -8,6 +8,8 @@ import {
     registerSchema,
     RegisterInput,
 } from "@/validators/auth.schema";
+import { sendMail } from "@/lib/mailer";
+import { welcomeEmail } from "@/lib/email-templates";
 
 export async function registerUser(data: RegisterInput) {
     try {
@@ -38,6 +40,14 @@ export async function registerUser(data: RegisterInput) {
 
         const { password: _password, ...userWithoutPassword } = user.toObject();
 
+        // Send welcome email (non-blocking)
+        try {
+            const { subject, html } = welcomeEmail(name);
+            await sendMail({ to: email, subject, html });
+        } catch (emailErr) {
+            console.error("[Email] Failed to send welcome email:", emailErr);
+        }
+
         return {
             success: true,
             message: "User registered successfully",
@@ -50,4 +60,4 @@ export async function registerUser(data: RegisterInput) {
             message: error?.message || "An unexpected error occurred during registration.",
         };
     }
-}
+}

@@ -1,27 +1,32 @@
+"use client";
+
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
 import { Briefcase, Globe, Mail } from "lucide-react";
-
-const footerLinks = [
-  {
-    title: "Platform",
-    links: [
-      { label: "Browse Jobs", href: "/jobs" },
-      { label: "Post a Job", href: "/dashboard/post-job" },
-      { label: "Dashboard", href: "/dashboard" },
-    ],
-  },
-  {
-    title: "Resources",
-    links: [
-      { label: "How It Works", href: "/#categories" },
-      { label: "Categories", href: "/#categories" },
-      { label: "FAQ", href: "/#faq" },
-    ],
-  },
-];
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export function Footer() {
+  const { t } = useI18n();
+
+  const footerLinks = [
+    {
+      title: t("footer.platform"),
+      links: [
+        { label: t("nav.browseJobs"), href: "/jobs" },
+        { label: t("nav.postJob"), href: "/dashboard/post-job" },
+        { label: t("nav.dashboard"), href: "/dashboard" },
+      ],
+    },
+    {
+      title: t("footer.resources"),
+      links: [
+        { label: t("footer.howItWorks"), href: "/#categories" },
+        { label: t("footer.categories"), href: "/#categories" },
+        { label: t("footer.faq"), href: "/#faq" },
+      ],
+    },
+  ];
+
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -30,27 +35,8 @@ export function Footer() {
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Find verified local service professionals and nearby gigs. Post
-              jobs, apply to tasks, and get work done in your neighborhood.
+              {t("footer.description")}
             </p>
-            <div className="mt-4 flex items-center gap-3">
-              <a
-                href="mailto:contact@worknear.app"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Email"
-              >
-                <Mail size={16} />
-              </a>
-              <a
-                href="https://worknear.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Website"
-              >
-                <Globe size={16} />
-              </a>
-            </div>
           </div>
 
           {/* Link Groups */}
@@ -82,7 +68,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Briefcase size={12} />
-            <span>Built with Next.js &amp; MongoDB</span>
+            <span>{t("footer.builtWith")}</span>
           </div>
         </div>
       </div>

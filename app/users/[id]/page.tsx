@@ -1,242 +1,182 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { use } from "react";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { useSession } from "next-auth/react";
+import {
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Star,
+  ArrowLeft,
+  Calendar,
+  Wrench,
+  Briefcase,
+  User as UserIcon,
+} from "lucide-react";
+import { Navbar } from "@/components/shared/navbar";
+import { Footer } from "@/components/shared/footer";
+import { StarRating } from "@/components/reviews/star-rating";
+import { ReviewCard } from "@/components/reviews/review-card";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useUserProfile } from "@/hooks/use-user";
 
-interface ReviewItem {
-    _id: string;
-    rating: number;
-    comment: string;
-    reviewer: {
-        _id: string;
-        name: string;
-        profileImage?: string;
-    };
-    createdAt: string;
+interface PublicProfilePageProps {
+  params: Promise<{ id: string }>;
 }
 
-interface UserProfileDetail {
-    _id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    bio?: string;
-    location?: string;
-    skills?: string[];
-    isVerified?: boolean;
-    averageRating: number;
-    reviewCount: number;
-    reviews: ReviewItem[];
-    createdAt: string;
-}
+export default function PublicProfilePage({ params }: PublicProfilePageProps) {
+  const { id } = use(params);
+  const { data: user, isLoading, isError } = useUserProfile(id);
 
-export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
-    const { data: session } = useSession();
+  const formattedJoinDate = user?.createdAt
+    ? new Date(user.createdAt).getFullYear()
+    : null;
 
-    const [user, setUser] = useState<UserProfileDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const res = await fetch(`/api/users/${id}`);
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    setError(data.message || "Failed to load public profile");
-                } else {
-                    setUser(data.data);
-                }
-            } catch (err: any) {
-                setError(err?.message || "An unexpected error occurred");
-            } finally {
-                setLoading(false);
-            }
-        };
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-8">
+          <Link
+            href="/jobs"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Marketplace</span>
+          </Link>
 
-        fetchProfile();
-    }, [id]);
-
-    return (
-        <div className="min-h-screen flex flex-col justify-between">
-            <Navbar session={session} />
-            <div className="grow bg-zinc-50 py-12 dark:bg-zinc-950">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                    {loading ? (
-                        <div className="space-y-6 animate-pulse">
-                            <div className="h-64 rounded-2xl bg-zinc-200 dark:bg-zinc-900" />
-                            <div className="h-44 rounded-2xl bg-zinc-200 dark:bg-zinc-900" />
-                        </div>
-                    ) : error || !user ? (
-                        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-600 dark:border-red-900/40 dark:bg-red-950/40">
-                            <p className="font-bold text-base">{error || "User not found"}</p>
-                            <Link
-                                href="/jobs"
-                                className="mt-4 inline-flex rounded-xl bg-zinc-900 px-6 py-2.5 text-xs font-bold text-white hover:bg-zinc-800"
-                            >
-                                Browse Local Gigs
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="space-y-8">
-                            {/* Profile Header Card */}
-                            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md dark:border-zinc-800 dark:bg-zinc-900">
-                                <div className="h-32 bg-gradient-to-r from-teal-600 to-emerald-600 dark:from-teal-900 dark:to-emerald-950/80" />
-                                <div className="px-6 pb-6 pt-0 sm:px-8 -mt-14 sm:flex sm:items-end sm:justify-between">
-                                    <div className="flex items-end gap-5">
-                                        <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-teal-600 text-3xl font-extrabold text-white shadow-md dark:border-zinc-900">
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="pb-2">
-                                            <div className="flex items-center gap-2">
-                                                <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 sm:text-3xl">
-                                                    {user.name}
-                                                </h1>
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-bold text-teal-800 dark:bg-teal-950 dark:text-teal-300">
-                                                    🛡️ Verified Pro
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                                                Member since {new Date(user.createdAt).toLocaleDateString([], { month: "long", year: "numeric" })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Star Rating Badge */}
-                                    <div className="mt-4 sm:mt-0 rounded-2xl bg-zinc-50 p-4 border border-zinc-200 text-center sm:text-right dark:bg-zinc-800/60 dark:border-zinc-700/80 shrink-0">
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                                            Customer Rating
-                                        </div>
-                                        <div className="flex items-center justify-center sm:justify-end gap-1.5 mt-1">
-                                            <span className="text-amber-500 text-2xl font-extrabold">★</span>
-                                            <span className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">
-                                                {user.averageRating || "New"}
-                                            </span>
-                                            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">
-                                                ({user.reviewCount} {user.reviewCount === 1 ? "review" : "reviews"})
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800 space-y-6">
-                                    {/* Location & Contact */}
-                                    <div className="flex flex-wrap items-center gap-6 text-xs text-zinc-600 dark:text-zinc-300">
-                                        {user.location && (
-                                            <div className="flex items-center gap-1.5 font-semibold">
-                                                <span>📍 Neighborhood:</span>
-                                                <span className="text-zinc-900 dark:text-zinc-100 font-bold">{user.location}</span>
-                                            </div>
-                                        )}
-                                        {user.phone && (
-                                            <div className="flex items-center gap-1.5 font-semibold">
-                                                <span>📞 Verified Phone:</span>
-                                                <span className="text-zinc-900 dark:text-zinc-100 font-bold">{user.phone}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Bio */}
-                                    {user.bio ? (
-                                        <div>
-                                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                                                Professional Bio &amp; Credentials
-                                            </h3>
-                                            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
-                                                {user.bio}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-zinc-400 italic">No bio provided yet.</p>
-                                    )}
-
-                                    {/* Skills */}
-                                    {user.skills && user.skills.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">
-                                                Verified Trades &amp; Specialties
-                                            </h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {user.skills.map((skill) => (
-                                                    <span
-                                                        key={skill}
-                                                        className="rounded-xl bg-teal-50 px-3.5 py-1.5 text-xs font-bold text-teal-800 border border-teal-200/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/50"
-                                                    >
-                                                        ✓ {skill}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Reviews Section */}
-                            <div className="rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                <h2 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 mb-6 flex items-center gap-2">
-                                    <span>Verified Customer Reviews</span>
-                                    <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                                        {user.reviews.length}
-                                    </span>
-                                </h2>
-
-                                {user.reviews.length === 0 ? (
-                                    <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center dark:border-zinc-800 dark:bg-zinc-800/40">
-                                        <span className="text-3xl block mb-2">💬</span>
-                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                                            No reviews yet
-                                        </p>
-                                        <p className="text-xs text-zinc-500 mt-1">
-                                            Reviews appear here automatically after completed neighborhood gigs.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-5">
-                                        {user.reviews.map((rev) => (
-                                            <div
-                                                key={rev._id}
-                                                className="rounded-xl border border-zinc-100 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-800/40"
-                                            >
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-white font-bold text-xs">
-                                                            {rev.reviewer?.name?.charAt(0).toUpperCase() || "C"}
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                                                {rev.reviewer?.name || "Verified Customer"}
-                                                            </div>
-                                                            <div className="text-[10px] text-zinc-400">
-                                                                {new Date(rev.createdAt).toLocaleDateString([], { dateStyle: "medium" })}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1 rounded-lg bg-amber-100 px-2 py-1 text-xs font-extrabold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                                                        <span>★</span>
-                                                        <span>{rev.rating}.0</span>
-                                                    </div>
-                                                </div>
-
-                                                <p className="mt-3 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                                                    &ldquo;{rev.comment}&rdquo;
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+          {isLoading ? (
+            <div className="space-y-6">
+              <div className="h-48 animate-pulse rounded-3xl bg-muted" />
+              <div className="h-64 animate-pulse rounded-3xl bg-muted" />
             </div>
-            <Footer />
+          ) : isError || !user ? (
+            <div className="rounded-3xl border border-destructive/20 bg-destructive/10 p-12 text-center text-destructive">
+              <p className="text-lg font-bold">User profile not found.</p>
+              <p className="text-sm mt-1 text-muted-foreground">The profile you are looking for may have been removed or doesn&apos;t exist.</p>
+              <Link href="/jobs" className="mt-4 inline-block">
+                <Button variant="outline" className="rounded-xl">Return to Jobs</Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* Header Profile Card */}
+              <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                <div className="h-32 bg-gradient-to-r from-primary/30 via-primary/10 to-accent/30" />
+                <div className="p-6 sm:p-8 pt-0 relative">
+                  <div className="-mt-16 mb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div className="flex items-end gap-4">
+                      <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary text-3xl font-extrabold text-primary-foreground shadow-lg border-4 border-card">
+                        {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                      </div>
+                      <div className="mb-1">
+                        <div className="flex items-center gap-2">
+                          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">{user.name}</h1>
+                          <ShieldCheck size={20} className="text-emerald-500 shrink-0" title="Verified Community Member" />
+                        </div>
+                        {formattedJoinDate && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            WorkNear Community Member since {formattedJoinDate}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Overall Rating Pill */}
+                    <div className="flex items-center gap-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3.5 px-5 shrink-0">
+                      <div className="text-center">
+                        <div className="text-2xl font-extrabold text-foreground">
+                          {user.averageRating > 0 ? user.averageRating.toFixed(1) : "New"}
+                        </div>
+                        {user.averageRating > 0 && (
+                          <StarRating value={Math.round(user.averageRating)} readonly size={14} className="mt-0.5" />
+                        )}
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {user.reviewCount} review{user.reviewCount !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {user.bio && (
+                    <p className="mt-4 text-sm text-foreground/80 leading-relaxed border-l-2 border-primary/30 pl-4 italic">
+                      &ldquo;{user.bio}&rdquo;
+                    </p>
+                  )}
+
+                  {/* Contact & Meta Grid */}
+                  <div className="mt-6 flex flex-wrap items-center gap-6 text-xs text-muted-foreground pt-6 border-t border-border">
+                    {user.location && (
+                      <span className="flex items-center gap-1.5 font-medium text-foreground">
+                        <MapPin size={15} className="text-primary" />
+                        <span>{user.location}</span>
+                      </span>
+                    )}
+                    {user.phone && (
+                      <span className="flex items-center gap-1.5 font-medium text-foreground">
+                        <Phone size={15} className="text-primary" />
+                        <span>{user.phone}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Skills tags */}
+                  {user.skills && user.skills.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">
+                        Verified Skills &amp; Services
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {user.skills.map((skill) => (
+                          <span
+                            key={skill}
+                            className="rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold text-primary"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Reviews Received Section */}
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                    <Star size={22} className="text-amber-400 fill-amber-400" />
+                    <span>Reviews &amp; Ratings Received</span>
+                    <span className="ml-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600">
+                      {user.reviews?.length || 0}
+                    </span>
+                  </h2>
+                </div>
+
+                {!user.reviews || user.reviews.length === 0 ? (
+                  <EmptyState
+                    icon={Star}
+                    title="No Reviews Yet"
+                    description={`${user.name} hasn't received any reviews yet.`}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {user.reviews.map((review: any) => (
+                      <ReviewCard key={review._id} review={review} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
-    );
+      </main>
+
+      <Footer />
+    </div>
+  );
 }

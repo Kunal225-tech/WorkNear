@@ -1,10 +1,13 @@
 import { Navbar } from "@/components/shared/navbar";
 import { Footer } from "@/components/shared/footer";
 import { HeroSection } from "@/components/home/hero-section";
-import { StatsSection } from "@/components/home/stats-section";
-import { CategoriesSection } from "@/components/home/categories-section";
-import { FeaturedJobsSection } from "@/components/home/featured-jobs-section";
-import { CtaSection } from "@/components/home/cta-section";
+import dynamic from "next/dynamic";
+
+const VisualServicesSection = dynamic(() => import("@/components/home/visual-services-section").then((mod) => mod.VisualServicesSection), { ssr: true });
+const StatsSection = dynamic(() => import("@/components/home/stats-section").then((mod) => mod.StatsSection), { ssr: true });
+const CategoriesSection = dynamic(() => import("@/components/home/categories-section").then((mod) => mod.CategoriesSection), { ssr: true });
+const FeaturedJobsSection = dynamic(() => import("@/components/home/featured-jobs-section").then((mod) => mod.FeaturedJobsSection), { ssr: true });
+const CtaSection = dynamic(() => import("@/components/home/cta-section").then((mod) => mod.CtaSection), { ssr: true });
 
 export default function HomePage() {
   return (
@@ -12,6 +15,7 @@ export default function HomePage() {
       <Navbar />
       <main className="flex-1">
         <HeroSection />
+        <VisualServicesSection />
         <StatsSection />
         <CategoriesSection />
         <FeaturedJobsSection />

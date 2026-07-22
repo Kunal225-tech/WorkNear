@@ -73,6 +73,18 @@ export async function PATCH(
             );
         }
 
+        if (validatedData.data.status) {
+            if (validatedData.data.status === "completed" && existingJob.status !== "assigned") {
+                return errorResponse("Only assigned jobs can be marked as completed", 400);
+            }
+            if (validatedData.data.status === "assigned" && existingJob.status !== "open") {
+                return errorResponse("Invalid status transition", 400);
+            }
+            if (existingJob.status === "completed" || existingJob.status === "cancelled") {
+                return errorResponse("Cannot change status of a completed or cancelled job", 400);
+            }
+        }
+
         const updatedJob = await updateJob({
             jobId: id,
             ...validatedData.data,

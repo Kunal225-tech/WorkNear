@@ -7,19 +7,19 @@ const jobStatusConfig: Record<
 > = {
   open: {
     label: "Open",
-    className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+    className: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
   },
   assigned: {
     label: "Assigned",
-    className: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300",
+    className: "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
   },
   completed: {
     label: "Completed",
-    className: "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300",
+    className: "bg-stone-100 dark:bg-stone-500/10 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-500/20",
   },
   cancelled: {
     label: "Cancelled",
-    className: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",
+    className: "bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20",
   },
 };
 
@@ -29,19 +29,19 @@ const applicationStatusConfig: Record<
 > = {
   pending: {
     label: "Pending",
-    className: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+    className: "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
   },
   accepted: {
     label: "Accepted",
-    className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+    className: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
   },
   rejected: {
     label: "Rejected",
-    className: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",
+    className: "bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20",
   },
   withdrawn: {
     label: "Withdrawn",
-    className: "bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300",
+    className: "bg-stone-100 dark:bg-stone-500/10 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-500/20",
   },
 };
 

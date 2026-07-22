@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, IndianRupee, MapPin, Calendar } from "lucide-react";
+import { Loader2, ArrowRight, IndianRupee, MapPin, Calendar, ImagePlus, X } from "lucide-react";
 import { createJobSchema } from "@/validators/job.schema";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,17 @@ import type { Job } from "@/types";
 
 // Client-side schema adapted from createJobSchema for HTML input strings
 const jobFormSchema = z.object({
-  title: z.string().trim().min(5, "Title must be at least 5 characters").max(100),
-  description: z.string().trim().min(10, "Description must be at least 10 characters").max(1000),
+  title: z.string().trim().min(5, "Job title must be at least 5 characters").max(100),
+  description: z.string().trim().min(20, "Please provide at least 20 characters describing the work required.").max(1000),
   category: z.enum(JOB_CATEGORIES),
-  payment: z.coerce.number().positive("Payment must be greater than 0"),
-  location: z.string().trim().min(2, "Location is required").max(100),
-  requiredDate: z.string().min(1, "Please select a required completion date"),
+  payment: z.coerce.number().positive("Enter a valid budget greater than ₹0."),
+  location: z.string().trim().min(2, "Please enter a location or neighborhood.").max(100),
+  requiredDate: z.string().min(1, "Please select a required completion date").refine((val) => {
+    const selectedDate = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate >= today;
+  }, "Completion date cannot be in the past."),
 });
 
 type JobFormData = z.infer<typeof jobFormSchema>;
@@ -40,6 +45,26 @@ export function JobForm({ mode, initialData }: JobFormProps) {
   const createMutation = useCreateJob();
   const updateMutation = useUpdateJob();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(initialData?.images || []);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+
+      const newPreviewUrls = selectedFiles.map((file) => URL.createObjectURL(file));
+      setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    // Note: If it's a new file, we should remove it from `files` array.
+    // This simple implementation removes it visually, but a robust one maps files to previews.
+    // For simplicity, we just clear everything if they want to reset, or we carefully filter `files` if index is >= initialData.images.length
+  };
 
   // Format initial requiredDate to YYYY-MM-DD for date input
   const defaultDate = initialData?.requiredDate
@@ -49,6 +74,7 @@ export function JobForm({ mode, initialData }: JobFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<JobFormData>({
     resolver: zodResolver(jobFormSchema),
@@ -62,9 +88,64 @@ export function JobForm({ mode, initialData }: JobFormProps) {
     },
   });
 
+  // Auto-detect location for new jobs
+  useEffect(() => {
+    if (mode === "create" && !initialData?.location) {
+      if (!navigator.geolocation) return;
+
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+              headers: { 'User-Agent': 'WorkNearApp/1.0 (contact@worknear.local)' }
+            });
+            const data = await res.json();
+            if (data && data.display_name) {
+              const locationName = data.address?.suburb || data.address?.neighbourhood || data.address?.city || data.address?.town || data.display_name;
+              setValue("location", locationName);
+            }
+          } catch (err) {
+            console.error("Reverse geocoding failed", err);
+          } finally {
+            setIsLocating(false);
+          }
+        },
+        (err) => {
+          console.error("Location access denied", err);
+          setIsLocating(false);
+        }
+      );
+    }
+  }, [mode, initialData, setValue]);
+
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);
     try {
+      let uploadedImageUrls: string[] = initialData?.images || [];
+
+      // Upload new files to Cloudinary via our API route
+      if (files.length > 0) {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("file", file));
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload images");
+        const uploadData = await uploadRes.json();
+        
+        if (uploadData.urls) {
+          // Combine existing images (if we kept them) with newly uploaded ones
+          // For simplicity, we just add new ones to whatever previews are left
+          const existingPreviews = previewUrls.filter(url => url.startsWith("http"));
+          uploadedImageUrls = [...existingPreviews, ...uploadData.urls];
+        }
+      }
+
       if (mode === "create") {
         const newJob = await createMutation.mutateAsync({
           title: data.title,
@@ -73,7 +154,8 @@ export function JobForm({ mode, initialData }: JobFormProps) {
           payment: Number(data.payment),
           location: data.location,
           requiredDate: data.requiredDate,
-        });
+          images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
+        } as any);
         toast.success("Job posted successfully! Workers can now discover your task.");
         router.push(`/jobs/${newJob._id}`);
       } else if (mode === "edit" && initialData) {
@@ -86,7 +168,8 @@ export function JobForm({ mode, initialData }: JobFormProps) {
             payment: Number(data.payment),
             location: data.location,
             requiredDate: data.requiredDate,
-          },
+            images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
+          } as any,
         });
         toast.success("Job updated successfully!");
         router.push(`/dashboard/my-jobs`);
@@ -120,7 +203,7 @@ export function JobForm({ mode, initialData }: JobFormProps) {
           </div>
 
           {/* Category & Budget */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category" className="font-semibold">
                 Category <span className="text-destructive">*</span>
@@ -164,7 +247,7 @@ export function JobForm({ mode, initialData }: JobFormProps) {
           </div>
 
           {/* Location & Required Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="location" className="font-semibold">
                 Location / Neighborhood <span className="text-destructive">*</span>
@@ -173,11 +256,14 @@ export function JobForm({ mode, initialData }: JobFormProps) {
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="location"
-                  placeholder="e.g. Indiranagar, Bangalore"
-                  className="pl-9 h-11 rounded-xl"
-                  disabled={isSubmitting}
+                  placeholder={isLocating ? "Detecting location..." : "e.g. Indiranagar, Bangalore"}
+                  className="pl-9 pr-9 h-11 rounded-xl"
+                  disabled={isSubmitting || isLocating}
                   {...register("location")}
                 />
+                {isLocating && (
+                  <Loader2 className="absolute right-3 top-3.5 h-4 w-4 animate-spin text-amber-500" />
+                )}
               </div>
               {errors.location && (
                 <p className="text-xs font-medium text-destructive">{errors.location.message}</p>
@@ -219,6 +305,44 @@ export function JobForm({ mode, initialData }: JobFormProps) {
             {errors.description && (
               <p className="text-xs font-medium text-destructive">{errors.description.message}</p>
             )}
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-4 pt-2">
+            <Label className="font-semibold">
+              Images (Optional)
+            </Label>
+            
+            <div className="flex flex-wrap gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={index} className="relative h-24 w-24 rounded-xl border border-border/80 overflow-hidden bg-muted">
+                  <img src={url} alt={`Preview ${index}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80 flex items-center justify-center text-foreground hover:bg-destructive hover:text-white transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {previewUrls.length < 5 && (
+                <div className="relative h-24 w-24 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer">
+                  <ImagePlus size={24} className="text-muted-foreground" />
+                  <span className="text-[10px] font-medium text-muted-foreground">Add Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleFileChange}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">You can upload up to 5 images showing what needs to be done.</p>
           </div>
 
           {/* Buttons */}

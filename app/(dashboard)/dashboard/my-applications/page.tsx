@@ -66,13 +66,13 @@ export default function MyApplicationsPage() {
       ) : applications.length === 0 ? (
         <EmptyState
           icon={UserCheck}
-          title="No Applications Submitted"
-          description="You haven't submitted any job proposals yet. Explore our neighborhood marketplace to find flexible opportunities near you!"
+          title="You haven't applied to any jobs yet."
+          description="Explore local opportunities and find something that matches your skills."
           action={
             <Link href="/jobs">
               <Button className="rounded-xl gap-2">
                 <Search size={16} />
-                <span>Explore Local Jobs</span>
+                <span>Explore Jobs</span>
               </Button>
             </Link>
           }
@@ -93,7 +93,7 @@ export default function MyApplicationsPage() {
             return (
               <div
                 key={application._id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/40"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:border-border/80 hover:shadow-md"
               >
                 {/* Left: Job & App Info */}
                 <div className="space-y-2 flex-1 min-w-0">
@@ -104,7 +104,10 @@ export default function MyApplicationsPage() {
                       </span>
                     )}
                     <span className="text-xs font-medium text-muted-foreground">Proposal Status:</span>
-                    <StatusBadge status={application.status} type="application" />
+                    <StatusBadge 
+                        status={job?.status === "completed" ? "completed" : application.status} 
+                        type={job?.status === "completed" ? "job" : "application"} 
+                    />
                   </div>
 
                   {job ? (
@@ -172,9 +175,14 @@ export default function MyApplicationsPage() {
       <ConfirmDialog
         open={appToWithdraw !== null}
         onOpenChange={(open) => !open && setAppToWithdraw(null)}
-        title="Withdraw Application?"
-        description="Are you sure you want to withdraw your proposal for this job? You can apply again later if the job is still open."
-        confirmLabel="Yes, Withdraw Proposal"
+        title="Withdraw application?"
+        description={
+          appToWithdraw && getApplicationJob(appToWithdraw.job)
+            ? `Are you sure you want to withdraw your application for "${getApplicationJob(appToWithdraw.job)?.title}"? This action cannot be undone.`
+            : "Are you sure you want to withdraw your application? This action cannot be undone."
+        }
+        confirmLabel="Withdraw Application"
+        loadingLabel="Withdrawing..."
         variant="destructive"
         isLoading={withdrawMutation.isPending}
         onConfirm={handleWithdraw}

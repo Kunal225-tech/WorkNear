@@ -32,6 +32,8 @@ export const createJobSchema = z.object({
     requiredDate: z.coerce.date({
         error: "Invalid date",
     }),
+
+    images: z.array(z.string()).optional(),
 });
 
 export const updateJobSchema = z.object({
@@ -61,6 +63,10 @@ export const updateJobSchema = z.object({
         .optional(),
 
     requiredDate: z.coerce.date().optional(),
+    
+    status: z.enum(["open", "assigned", "completed", "cancelled"]).optional(),
+    
+    images: z.array(z.string()).optional(),
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;

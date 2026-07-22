@@ -7,12 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -25,6 +26,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { t } = useI18n();
 
   const {
     register,
@@ -69,9 +72,9 @@ export default function LoginPage() {
   return (
     <Card className="shadow-xl border-border/80">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">Sign in to your account</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t("auth.welcomeBack")}</CardTitle>
         <CardDescription>
-          Enter your credentials to access your dashboard and jobs
+          {t("auth.loginDesc")}
         </CardDescription>
       </CardHeader>
 
@@ -106,27 +109,27 @@ export default function LoginPage() {
               />
             </svg>
           )}
-          <span>Continue with Google</span>
+          <span>{t("auth.continueGoogle")}</span>
         </Button>
 
         <div className="relative flex items-center justify-center">
           <span className="w-full border-t border-border" />
-          <span className="absolute bg-card px-2 text-xs text-muted-foreground uppercase font-semibold">
-            or continue with email
+          <span className="absolute bg-card px-3 text-xs text-muted-foreground uppercase font-semibold">
+            {t("auth.or")}
           </span>
         </div>
 
         {/* Credentials Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                className="pl-9 h-11 rounded-xl"
+                className={`pl-9 h-11 rounded-xl ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 disabled={isLoading || isGoogleLoading}
                 {...register("email")}
               />
@@ -137,17 +140,25 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="pl-9 h-11 rounded-xl"
+                className={`pl-9 pr-10 h-11 rounded-xl ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 disabled={isLoading || isGoogleLoading}
                 {...register("password")}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
             {errors.password && (
               <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
@@ -162,11 +173,11 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Signing in...</span>
+                <span>{t("auth.signingIn")}</span>
               </>
             ) : (
               <>
-                <span>Sign In</span>
+                <span>{t("auth.signIn")}</span>
                 <ArrowRight size={16} />
               </>
             )}
@@ -176,9 +187,9 @@ export default function LoginPage() {
 
       <CardFooter className="flex flex-col items-center border-t border-border/60 pt-4 text-center text-sm text-muted-foreground">
         <div>
-          Don&apos;t have an account yet?{" "}
+          {t("auth.noAccount")} {" "}
           <Link href="/register" className="font-semibold text-primary hover:underline">
-            Create an account
+            {t("auth.createAccount")}
           </Link>
         </div>
       </CardFooter>

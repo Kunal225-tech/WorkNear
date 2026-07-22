@@ -15,15 +15,16 @@ export const jobKeys = {
   details: () => [...jobKeys.all, "detail"] as const,
   detail: (id: string) => [...jobKeys.details(), id] as const,
   myJobs: () => [...jobKeys.all, "my-jobs"] as const,
+  savedJobs: () => [...jobKeys.all, "saved"] as const,
 };
 
 // ─── Queries ────────────────────────────────────────────
 
 /** Fetch all jobs */
-export function useJobs() {
+export function useJobs(params?: { lat?: number; lng?: number; radius?: number }) {
   return useQuery({
-    queryKey: jobKeys.lists(),
-    queryFn: () => jobService.getJobs(),
+    queryKey: [...jobKeys.lists(), params],
+    queryFn: () => jobService.getJobs(params),
   });
 }
 
@@ -83,6 +84,26 @@ export function useDeleteJob() {
     mutationFn: (id: string) => jobService.deleteJob(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobKeys.all });
+    },
+  });
+}
+
+/** Fetch the current user's saved/bookmarked jobs */
+export function useSavedJobs() {
+  return useQuery({
+    queryKey: jobKeys.savedJobs(),
+    queryFn: () => jobService.getSavedJobs(),
+  });
+}
+
+/** Toggle bookmark on a job */
+export function useToggleSaveJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (jobId: string) => jobService.toggleSaveJob(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.savedJobs() });
     },
   });
 }

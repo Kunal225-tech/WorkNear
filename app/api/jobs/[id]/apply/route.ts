@@ -4,6 +4,10 @@ import { createApplication } from "@/actions/applications/createApplication";
 import { getApplication } from "@/actions/applications/getApplication";
 import { getJobById } from "@/actions/jobs/getJobById";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { sendMail } from "@/lib/mailer";
+import { newApplicationEmail } from "@/lib/email-templates";
+import { User } from "@/models/User";
+import { connectDB } from "@/db/connect";
 
 interface RouteParams {
   params: Promise<{
@@ -67,6 +71,28 @@ export async function POST(
       job: id,
       applicant: authUser.id,
     });
+
+    // ── Send email notification to job poster ──
+    try {
+      await connectDB();
+      const poster = typeof job.postedBy === "object" && "email" in job.postedBy
+        ? job.postedBy as any
+        : await User.findById(postedById).select("email name").lean() as any;
+
+      const applicantUser = await User.findById(authUser.id).select("name").lean() as any;
+
+      if (poster?.email) {
+        const { subject, html } = newApplicationEmail(
+          poster.name || "there",
+          job.title,
+          applicantUser?.name || "A worker",
+          id
+        );
+        await sendMail({ to: poster.email, subject, html });
+      }
+    } catch (emailErr) {
+      console.error("[Email] Failed to send new application notification:", emailErr);
+    }
 
     return successResponse(
       "Application submitted successfully",

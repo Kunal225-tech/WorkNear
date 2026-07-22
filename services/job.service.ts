@@ -1,13 +1,13 @@
 import api from "@/lib/axios";
-import type { ApiResponse, Job, CreateJobInput, UpdateJobInput } from "@/types";
+import type { ApiResponse, Job, CreateJobInput, UpdateJobInput, ToggleSaveResponse } from "@/types";
 
 export const jobService = {
   /**
    * Fetch all jobs.
    * GET /api/jobs
    */
-  async getJobs(): Promise<Job[]> {
-    const response = await api.get<ApiResponse<Job[]>>("/jobs");
+  async getJobs(params?: { lat?: number; lng?: number; radius?: number }): Promise<Job[]> {
+    const response = await api.get<ApiResponse<Job[]>>("/jobs", { params });
     return response.data.data;
   },
 
@@ -53,5 +53,23 @@ export const jobService = {
    */
   async deleteJob(id: string): Promise<void> {
     await api.delete(`/jobs/${id}`);
+  },
+
+  /**
+   * Toggle bookmark/save on a job.
+   * POST /api/jobs/:id/save
+   */
+  async toggleSaveJob(id: string): Promise<ToggleSaveResponse> {
+    const response = await api.post<ApiResponse<ToggleSaveResponse>>(`/jobs/${id}/save`);
+    return response.data.data;
+  },
+
+  /**
+   * Fetch current user's saved/bookmarked jobs.
+   * GET /api/jobs/saved
+   */
+  async getSavedJobs(): Promise<Job[]> {
+    const response = await api.get<ApiResponse<Job[]>>("/jobs/saved");
+    return response.data.data;
   },
 };

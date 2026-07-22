@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { Mail, Calendar, Check, X, User as UserIcon, Loader2 } from "lucide-react";
+import { Mail, Calendar, Check, X, User as UserIcon, Loader2, ExternalLink, Star } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -51,14 +52,43 @@ export function ApplicantCard({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40">
         {/* Left: Applicant Info */}
         <div className="flex items-start sm:items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-            {applicant?.name ? applicant.name.charAt(0).toUpperCase() : <UserIcon size={20} />}
-          </div>
+          {applicant ? (
+            <Link href={`/users/${applicant._id}`} className="shrink-0 hover:opacity-80 transition-opacity">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                {applicant.name ? applicant.name.charAt(0).toUpperCase() : <UserIcon size={20} />}
+              </div>
+            </Link>
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+              <UserIcon size={20} />
+            </div>
+          )}
+
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-foreground">
-                {applicant?.name || "Anonymous Applicant"}
-              </h4>
+              {applicant ? (
+                <div className="flex items-center gap-3">
+                  <Link href={`/users/${applicant._id}`} className="font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                    <span>{applicant.name}</span>
+                    <ExternalLink size={13} className="text-muted-foreground" />
+                  </Link>
+                  {applicant.reviewCount > 0 ? (
+                    <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                      <Star size={12} className="fill-amber-500 text-amber-500" />
+                      <span>{applicant.averageRating?.toFixed(1)}</span>
+                      <span className="text-muted-foreground font-normal ml-0.5">
+                        ({applicant.reviewCount} review{applicant.reviewCount !== 1 ? "s" : ""})
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      New
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <h4 className="font-bold text-foreground">Anonymous Applicant</h4>
+              )}
               <StatusBadge status={application.status} type="application" />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">

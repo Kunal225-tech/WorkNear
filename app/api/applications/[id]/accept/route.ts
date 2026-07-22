@@ -3,6 +3,10 @@ import { getApiAuthUser } from "@/lib/api-auth";
 import { getApplicationById } from "@/actions/applications/getApplicationById";
 import { acceptApplication } from "@/actions/applications/acceptApplication";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { sendMail } from "@/lib/mailer";
+import { applicationAcceptedEmail } from "@/lib/email-templates";
+import { User } from "@/models/User";
+import { connectDB } from "@/db/connect";
 
 interface RouteParams {
   params: Promise<{
@@ -36,6 +40,8 @@ export async function PATCH(
     const job = application.job as {
       postedBy?: mongoose.Types.ObjectId | string;
       status?: string;
+      title?: string;
+      _id?: string;
     };
 
     const postedById = typeof job.postedBy === "object" && job.postedBy !== null && "_id" in job.postedBy
@@ -64,6 +70,30 @@ export async function PATCH(
     }
 
     const updatedApplication = await acceptApplication(id);
+
+    // ── Send email notification to accepted applicant ──
+    try {
+      await connectDB();
+      const applicant = application.applicant as any;
+      const applicantId = typeof applicant === "object" && "_id" in applicant
+        ? String(applicant._id)
+        : String(applicant);
+
+      const applicantUser = await User.findById(applicantId).select("email name").lean() as any;
+      const posterUser = await User.findById(authUser.id).select("name").lean() as any;
+
+      if (applicantUser?.email && job.title) {
+        const { subject, html } = applicationAcceptedEmail(
+          applicantUser.name || "there",
+          job.title,
+          posterUser?.name || "the employer",
+          String(job._id || "")
+        );
+        await sendMail({ to: applicantUser.email, subject, html });
+      }
+    } catch (emailErr) {
+      console.error("[Email] Failed to send accepted notification:", emailErr);
+    }
 
     return successResponse(
       "Application accepted successfully",

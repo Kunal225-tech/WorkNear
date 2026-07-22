@@ -7,12 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Mail, Lock, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 const registerSchema = z
   .object({
@@ -32,6 +33,9 @@ export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { t } = useI18n();
 
   const {
     register,
@@ -55,6 +59,7 @@ export default function RegisterPage() {
         name: data.name,
         email: data.email,
         password: data.password,
+        confirmPassword: data.confirmPassword,
       });
 
       if (response.success || response.message) {
@@ -94,9 +99,9 @@ export default function RegisterPage() {
   return (
     <Card className="shadow-xl border-border/80">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t("auth.createTitle")}</CardTitle>
         <CardDescription>
-          Join WorkNear to post jobs or get hired in your neighborhood
+          {t("auth.registerDesc")}
         </CardDescription>
       </CardHeader>
 
@@ -131,27 +136,27 @@ export default function RegisterPage() {
               />
             </svg>
           )}
-          <span>Continue with Google</span>
+          <span>{t("auth.continueGoogle")}</span>
         </Button>
 
         <div className="relative flex items-center justify-center">
           <span className="w-full border-t border-border" />
-          <span className="absolute bg-card px-2 text-xs text-muted-foreground uppercase font-semibold">
-            or register with email
+          <span className="absolute bg-card px-3 text-xs text-muted-foreground uppercase font-semibold">
+            {t("auth.or")}
           </span>
         </div>
 
         {/* Credentials Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t("auth.fullName")}</Label>
             <div className="relative">
               <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="name"
                 type="text"
                 placeholder="John Doe"
-                className="pl-9 h-11 rounded-xl"
+                className={`pl-9 h-11 rounded-xl ${errors.name ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 disabled={isLoading || isGoogleLoading}
                 {...register("name")}
               />
@@ -162,14 +167,14 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                className="pl-9 h-11 rounded-xl"
+                className={`pl-9 h-11 rounded-xl ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 disabled={isLoading || isGoogleLoading}
                 {...register("email")}
               />
@@ -181,17 +186,25 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-9 h-11 rounded-xl"
+                  className={`pl-9 pr-10 h-11 rounded-xl ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   disabled={isLoading || isGoogleLoading}
                   {...register("password")}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
               {errors.password && (
                 <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
@@ -199,17 +212,25 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t("auth.confirmPassword")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-9 h-11 rounded-xl"
+                  className={`pl-9 pr-10 h-11 rounded-xl ${errors.confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   disabled={isLoading || isGoogleLoading}
                   {...register("confirmPassword")}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
               {errors.confirmPassword && (
                 <p className="text-xs font-medium text-destructive">{errors.confirmPassword.message}</p>
@@ -225,11 +246,11 @@ export default function RegisterPage() {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Creating account...</span>
+                <span>{t("auth.creatingAccount")}</span>
               </>
             ) : (
               <>
-                <span>Get Started</span>
+                <span>{t("auth.getStarted")}</span>
                 <ArrowRight size={16} />
               </>
             )}
@@ -239,9 +260,9 @@ export default function RegisterPage() {
 
       <CardFooter className="flex flex-col items-center border-t border-border/60 pt-4 text-center text-sm text-muted-foreground">
         <div>
-          Already have an account?{" "}
+          {t("auth.hasAccount")} {" "}
           <Link href="/login" className="font-semibold text-primary hover:underline">
-            Sign in instead
+            {t("auth.signIn")}
           </Link>
         </div>
       </CardFooter>

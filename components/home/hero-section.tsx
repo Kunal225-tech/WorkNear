@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, MapPin, ArrowRight, ShieldCheck, Zap, Star } from "lucide-react";
+import { Search, MapPin, ShieldCheck, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/providers/I18nProvider";
+import { dictionaries } from "@/i18n/dictionaries";
 
 export function HeroSection() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
 
@@ -20,21 +23,17 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 lg:pb-32 bg-gradient-to-b from-background via-primary/5 to-background border-b border-border/40">
-      {/* Decorative ambient blobs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-accent/15 rounded-full blur-3xl pointer-events-none -z-10" />
-
+    <section className="relative pt-20 pb-24 md:pt-28 md:pb-32 bg-background border-b border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-        {/* Pill Badge */}
+        {/* Trust Label */}
         <motion.div
-          initial={{ opacity: 0, y: -15 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground mb-6 shadow-sm"
         >
-          <Zap size={14} className="fill-primary text-primary" />
-          <span>The Neighborhood Talent Marketplace</span>
+          <Zap size={14} className="text-primary" />
+          <span>{t("hero.badge")}</span>
         </motion.div>
 
         {/* Headline */}
@@ -42,12 +41,10 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl leading-[1.1]"
+          className="mx-auto max-w-4xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl leading-[1.15]"
         >
-          Find Local Jobs &amp; Hire{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-            Nearby Talent
-          </span>
+          {t("hero.title1")}{locale === 'en' ? <br className="hidden sm:block" /> : ' '}
+          <span className="text-primary">{t("hero.title2")}</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -55,43 +52,43 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-xl leading-relaxed"
+          className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg leading-relaxed text-center"
         >
-          Connect with trusted professionals right in your community. Whether you need a job done fast or want to pick up flexible gigs near your home, WorkNear makes it seamless.
+          {t("hero.subtitle")}
         </motion.p>
 
         {/* Search Box */}
         <motion.form
-          initial={{ opacity: 0, y: 25 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           onSubmit={handleSearch}
-          className="mx-auto mt-10 max-w-3xl rounded-2xl border border-border bg-card p-2 sm:p-3 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+          className="mx-auto mt-10 max-w-3xl rounded-xl border border-border bg-card p-2 shadow-sm flex flex-col sm:flex-row items-stretch gap-2 transition-all focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/20"
         >
-          <div className="flex-1 flex items-center gap-3 px-3 py-2 bg-muted/40 rounded-xl">
+          <div className="flex-1 flex items-center gap-3 px-3 py-2.5 sm:border-r border-border">
             <Search size={18} className="text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Job title, keyword, or skill (e.g. Electrician, Web Dev)"
+              placeholder={t("hero.searchPlaceholder")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
 
-          <div className="flex-1 flex items-center gap-3 px-3 py-2 bg-muted/40 rounded-xl sm:border-l sm:border-border/60">
+          <div className="flex-1 flex items-center gap-3 px-3 py-2.5">
             <MapPin size={18} className="text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="City or Neighborhood (e.g. Downtown)"
+              placeholder={t("hero.locationPlaceholder")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
 
-          <Button type="submit" size="lg" className="rounded-xl px-6 font-semibold shrink-0">
-            Search Jobs
+          <Button type="submit" size="lg" className="rounded-lg px-8 font-semibold shrink-0 sm:ml-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0">
+            {t("hero.searchButton")}
           </Button>
         </motion.form>
 
@@ -100,18 +97,22 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
+          className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-sm"
         >
-          <span className="font-medium">Popular:</span>
-          {["Plumbing", "Home Repair", "Tutoring", "Web Design", "Cleaning"].map((tag) => (
-            <button
-              key={tag}
-              onClick={() => router.push(`/jobs?search=${encodeURIComponent(tag)}`)}
-              className="rounded-full bg-muted px-3 py-1 text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-            >
-              {tag}
-            </button>
-          ))}
+          <span className="font-medium text-muted-foreground">{t("hero.popular")}</span>
+          {["tag1", "tag2", "tag3", "tag4", "tag5"].map((tagKey) => {
+            const translatedTag = t(`hero.${tagKey}` as any);
+            const englishTag = dictionaries.en[`hero.${tagKey}` as keyof typeof dictionaries.en];
+            return (
+              <button
+                key={tagKey}
+                onClick={() => router.push(`/jobs?search=${encodeURIComponent(englishTag)}`)}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                {translatedTag}
+              </button>
+            );
+          })}
         </motion.div>
 
         {/* Value Prop Highlights */}
@@ -119,35 +120,35 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto pt-10 border-t border-border/60"
+          className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto pt-10 border-t border-border"
         >
-          <div className="flex items-center justify-center sm:justify-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <ShieldCheck size={20} />
             </div>
-            <div className="text-left">
-              <h4 className="text-sm font-semibold text-foreground">Verified Locals</h4>
-              <p className="text-xs text-muted-foreground">Trusted community reviews</p>
+            <div>
+              <h4 className="text-base font-semibold text-foreground">{t("hero.valueProp1Title")}</h4>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{t("hero.valueProp1Desc")}</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Zap size={20} />
             </div>
-            <div className="text-left">
-              <h4 className="text-sm font-semibold text-foreground">Instant Hiring</h4>
-              <p className="text-xs text-muted-foreground">Direct connection &amp; quick pay</p>
+            <div>
+              <h4 className="text-base font-semibold text-foreground">{t("hero.valueProp2Title")}</h4>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{t("hero.valueProp2Desc")}</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Star size={20} />
             </div>
-            <div className="text-left">
-              <h4 className="text-sm font-semibold text-foreground">Transparent Terms</h4>
-              <p className="text-xs text-muted-foreground">Clear scope &amp; fixed rates</p>
+            <div>
+              <h4 className="text-base font-semibold text-foreground">{t("hero.valueProp3Title")}</h4>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{t("hero.valueProp3Desc")}</p>
             </div>
           </div>
         </motion.div>

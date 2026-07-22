@@ -1,9 +1,10 @@
-"use server";
+
 
 import { auth } from "@/auth";
 import { connectDB } from "@/db/connect";
 import { Job } from "@/models/Job";
 import { createJobSchema, CreateJobInput } from "@/validators/job.schema";
+import { geocodeLocation } from "@/lib/geocode";
 
 export async function createJob(jobData: CreateJobInput, userId?: string) {
     try {
@@ -30,9 +31,19 @@ export async function createJob(jobData: CreateJobInput, userId?: string) {
 
         await connectDB();
 
+        let locationCoordinates = undefined;
+        const coords = await geocodeLocation(validatedData.data.location);
+        if (coords) {
+            locationCoordinates = {
+                type: 'Point',
+                coordinates: coords,
+            };
+        }
+
         const job = await Job.create({
             ...validatedData.data,
             postedBy,
+            ...(locationCoordinates ? { locationCoordinates } : {})
         });
 
         return {

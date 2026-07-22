@@ -12,7 +12,7 @@ export const authConfig = {
             const nextUrl = (request as any)?.nextUrl;
             if (!nextUrl || !nextUrl.pathname) return true;
 
-            const protectedRoutes = ["/post-job", "/profile", "/my-jobs"];
+            const protectedRoutes = ["/dashboard", "/post-job", "/profile", "/my-jobs", "/my-applications"];
             const isProtected = protectedRoutes.some((route) =>
                 nextUrl.pathname.startsWith(route)
             );

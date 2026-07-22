@@ -9,17 +9,56 @@ import { PageHeader } from "@/components/shared/page-header";
 import { JobCard } from "@/components/jobs/job-card";
 import { JobCardSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useJobs } from "@/hooks/use-jobs";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
+import { useI18n } from "@/components/providers/I18nProvider";
 import type { Job, JobCategory, JobStatus } from "@/types";
 
 function JobsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: jobs, isLoading, isError, refetch } = useJobs();
+  const [selectedRadius, setSelectedRadius] = useState<string>("10");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  useEffect(() => {
+    if (selectedRadius !== "ALL" && !userLocation) {
+      if (!navigator.geolocation) {
+        setLocationError("Geolocation is not supported");
+        setSelectedRadius("ALL");
+        return;
+      }
+      setIsLocating(true);
+      setLocationError(null);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error(error);
+          setLocationError("Location access denied or unavailable. Showing all regions.");
+          setIsLocating(false);
+        }
+      );
+    }
+  }, [selectedRadius, userLocation]);
+
+  const queryParams = useMemo(() => {
+    if (userLocation) {
+      return { lat: userLocation.lat, lng: userLocation.lng, radius: parseInt(selectedRadius) };
+    }
+    return undefined;
+  }, [selectedRadius, userLocation]);
+
+  const { data: jobs, isLoading: isJobsLoading, isError, refetch } = useJobs(queryParams);
+  const isLoading = isJobsLoading || isLocating;
+  const { t } = useI18n();
 
   // URL state defaults
   const initialSearch = searchParams.get("search") || "";
@@ -32,6 +71,7 @@ function JobsPageContent() {
   const [selectedStatus, setSelectedStatus] = useState<string>("open");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const itemsPerPage = 9;
 
   // Sync state if URL search parameters change
@@ -92,6 +132,7 @@ function JobsPageContent() {
     setLocationQuery("");
     setSelectedCategory("ALL");
     setSelectedStatus("ALL");
+    setSelectedRadius("10");
     setSortBy("newest");
     setCurrentPage(1);
     router.push("/jobs");
@@ -104,18 +145,64 @@ function JobsPageContent() {
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <PageHeader
-            title="Browse Local Jobs"
-            description="Explore open gigs and hiring tasks right in your neighborhood. Filter by category, location, and budget."
+            title={t("jobs.title")}
+            description={t("jobs.subtitle")}
           />
 
-          {/* Filter Bar */}
-          <div className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-sm space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Mobile Filter Button */}
+          <div className="mt-6 md:hidden">
+            <Button
+              variant="outline"
+              className="w-full justify-center gap-2 rounded-xl h-12"
+              onClick={() => setIsMobileFiltersOpen(true)}
+            >
+              <Filter size={18} />
+              <span>Filters &amp; Sort</span>
+              {(searchQuery || locationQuery || selectedCategory !== "ALL" || selectedStatus !== "open" || sortBy !== "newest") && (
+                <span className="ml-1 rounded-full bg-primary w-5 h-5 flex items-center justify-center text-[10px] text-primary-foreground font-bold">
+                  !
+                </span>
+              )}
+            </Button>
+          </div>
+
+          {/* Filter Bar (Desktop) & Drawer (Mobile) */}
+          <div
+            className={cn(
+              "md:mt-8 md:block",
+              isMobileFiltersOpen
+                ? "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:static md:bg-transparent md:backdrop-blur-none"
+                : "hidden"
+            )}
+          >
+            <div
+              className={cn(
+                "rounded-xl border border-border bg-card p-4 shadow-sm space-y-4",
+                isMobileFiltersOpen
+                  ? "absolute right-0 top-0 bottom-0 w-4/5 max-w-sm rounded-none border-l animate-in slide-in-from-right overflow-y-auto p-6"
+                  : ""
+              )}
+            >
+              {isMobileFiltersOpen && (
+                <div className="flex items-center justify-between mb-6 md:hidden border-b border-border pb-4">
+                  <span className="font-bold text-lg text-foreground">Filters</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileFiltersOpen(false)}
+                    className="rounded-xl -mr-2"
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-3">
               {/* Keyword Search */}
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-3 text-muted-foreground" />
                 <Input
-                  placeholder="Keyword or skill..."
+                  placeholder={t("jobs.keyword")}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -137,7 +224,7 @@ function JobsPageContent() {
               <div className="relative">
                 <MapPin size={16} className="absolute left-3 top-3 text-muted-foreground" />
                 <Input
-                  placeholder="City or neighborhood..."
+                  placeholder={t("jobs.location")}
                   value={locationQuery}
                   onChange={(e) => {
                     setLocationQuery(e.target.value);
@@ -155,6 +242,22 @@ function JobsPageContent() {
                 )}
               </div>
 
+              {/* Radius Dropdown */}
+              <div className="flex flex-col gap-1">
+                <Select
+                  value={selectedRadius}
+                  onChange={(e) => {
+                    setSelectedRadius(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-xl h-10"
+                >
+                  <option value="5">Within 5 km</option>
+                  <option value="10">Within 10 km</option>
+                </Select>
+                {locationError && <span className="text-[10px] text-destructive px-1">{locationError}</span>}
+              </div>
+
               {/* Category Dropdown */}
               <div className="flex items-center gap-2">
                 <Select
@@ -165,7 +268,7 @@ function JobsPageContent() {
                   }}
                   className="rounded-xl h-10"
                 >
-                  <option value="ALL">All Categories</option>
+                  <option value="ALL">{t("jobs.allCategories")}</option>
                   {JOB_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -184,10 +287,10 @@ function JobsPageContent() {
                   }}
                   className="rounded-xl h-10"
                 >
-                  <option value="ALL">All Status</option>
-                  <option value="open">Open Only</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="completed">Completed</option>
+                  <option value="ALL">{t("jobs.allStatus")}</option>
+                  <option value="open">{t("jobs.openOnly")}</option>
+                  <option value="assigned">{t("jobs.assigned")}</option>
+                  <option value="completed">{t("jobs.completed")}</option>
                 </Select>
 
                 <Select
@@ -195,9 +298,9 @@ function JobsPageContent() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="rounded-xl h-10"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="payment-high">Highest Pay</option>
-                  <option value="payment-low">Lowest Pay</option>
+                  <option value="newest">{t("jobs.newest")}</option>
+                  <option value="payment-high">{t("jobs.highestPay")}</option>
+                  <option value="payment-low">{t("jobs.lowestPay")}</option>
                 </Select>
               </div>
             </div>
@@ -212,6 +315,9 @@ function JobsPageContent() {
                       Category: {selectedCategory}
                     </span>
                   )}
+                  <span className="rounded-md bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-500">
+                    Within {selectedRadius} km
+                  </span>
                   {selectedStatus !== "ALL" && (
                     <span className="rounded-md bg-muted px-2 py-0.5 font-medium text-foreground">
                       Status: {selectedStatus}
@@ -223,18 +329,30 @@ function JobsPageContent() {
                   className="flex items-center gap-1 font-semibold text-primary hover:underline"
                 >
                   <RefreshCw size={12} />
-                  <span>Reset All Filters</span>
+                  <span>{t("jobs.clearFilters")}</span>
                 </button>
               </div>
             )}
+            {isMobileFiltersOpen && (
+              <div className="mt-8 pt-4 border-t border-border md:hidden">
+                <Button
+                  className="w-full rounded-xl h-12 text-base font-semibold shadow-md"
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                >
+                  Apply Filters
+                </Button>
+              </div>
+            )}
+            </div>
           </div>
 
           {/* Results Summary & Grid */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-6 text-sm text-muted-foreground">
               <div>
-                Showing <span className="font-semibold text-foreground">{filteredJobs.length}</span>{" "}
-                {filteredJobs.length === 1 ? "job" : "jobs"} found
+                <span className="font-semibold text-foreground">{filteredJobs.length}</span>{" "}
+                {filteredJobs.length === 1 ? "job found" : "jobs found"}
+                {isLocating && <span className="ml-2 animate-pulse text-amber-500">(Locating...)</span>}
               </div>
             </div>
 
@@ -245,18 +363,18 @@ function JobsPageContent() {
                 ))}
               </div>
             ) : isError ? (
-              <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-12 text-center text-destructive">
-                <p className="text-lg font-bold">Failed to load jobs</p>
-                <p className="text-sm mt-1 opacity-80">There was a problem reaching the server.</p>
-                <Button onClick={() => refetch()} variant="outline" className="mt-4 rounded-xl border-destructive/40">
+              <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-12 text-center text-destructive flex flex-col items-center justify-center">
+                <p className="text-lg font-bold">Something went wrong</p>
+                <p className="text-sm mt-1 mb-4 opacity-80">We couldn't load the jobs right now. Please try again.</p>
+                <Button onClick={() => refetch()} variant="outline" className="rounded-xl border-destructive/40 hover:bg-destructive/10">
                   Try Again
                 </Button>
               </div>
             ) : paginatedJobs.length === 0 ? (
               <EmptyState
                 icon={Briefcase}
-                title="No Matching Jobs Found"
-                description="We couldn't find any jobs matching your current search and filter settings. Try clearing your filters or search terms."
+                title="No jobs match your search"
+                description="Try adjusting your keywords, location, or filters."
                 action={
                   <Button onClick={handleResetFilters} className="rounded-xl">
                     Clear Filters

@@ -19,11 +19,19 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useMyJobs } from "@/hooks/use-jobs";
 import { useMyApplications } from "@/hooks/use-applications";
+import { useDashboardMode } from "@/components/dashboard/mode-provider";
 
 export default function DashboardOverviewPage() {
   const { data: session } = useSession();
+  const { mode, isMounted } = useDashboardMode();
   const { data: myJobs = [], isLoading: isJobsLoading } = useMyJobs();
   const { data: myApps = [], isLoading: isAppsLoading } = useMyApplications();
+
+  // Filter out completed jobs from the recent applications view
+  const activeApps = myApps.filter((app) => {
+    const jobObj = typeof app.job === "object" ? app.job : null;
+    return jobObj?.status !== "completed";
+  });
 
   // Compute stat card numbers
   const totalPosted = myJobs.length;
@@ -46,7 +54,11 @@ export default function DashboardOverviewPage() {
         }
       />
 
-      {/* Stat Cards Grid */}
+      {!isMounted ? (
+        <div className="h-64 animate-pulse bg-muted rounded-xl" />
+      ) : mode === "employer" ? (
+        <>
+          {/* Stat Cards Grid */}
       {isJobsLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <DashboardCardSkeleton />
@@ -77,17 +89,17 @@ export default function DashboardOverviewPage() {
             icon={Users}
             iconClassName="bg-amber-500/10 text-amber-500"
           />
-          <DashboardCard
-            title="Completed Jobs"
-            value={completedJobs}
-            description="Successfully finished & closed"
-            icon={CheckCircle2}
-            iconClassName="bg-purple-500/10 text-purple-500"
-          />
-        </div>
-      )}
+            <DashboardCard
+              title="Completed Jobs"
+              value={completedJobs}
+              description="Successfully finished & closed"
+              icon={CheckCircle2}
+              iconClassName="bg-violet-500/10 text-violet-500"
+            />
+          </div>
+        )}
 
-      {/* Recent Posted Jobs Section */}
+        {/* Recent Posted Jobs Section */}
       <div className="space-y-4 pt-4 border-t border-border">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -127,7 +139,7 @@ export default function DashboardOverviewPage() {
             {myJobs.slice(0, 3).map((job) => (
               <div
                 key={job._id}
-                className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40"
+                className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
@@ -164,6 +176,43 @@ export default function DashboardOverviewPage() {
           </div>
         )}
       </div>
+      </>
+      ) : (
+      <>
+      {/* Worker Stat Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {isAppsLoading ? (
+          <>
+            <DashboardCardSkeleton />
+            <DashboardCardSkeleton />
+            <DashboardCardSkeleton />
+          </>
+        ) : (
+          <>
+            <DashboardCard
+              title="Total Applications"
+              value={myApps.length}
+              description="Proposals you have submitted"
+              icon={UserCheck}
+              iconClassName="bg-blue-500/10 text-blue-500"
+            />
+            <DashboardCard
+              title="Active Gigs"
+              value={myApps.filter(a => a.status === 'accepted' && (typeof a.job === 'object' && (a.job as any)?.status !== 'completed')).length}
+              description="Jobs you are currently working on"
+              icon={Clock}
+              iconClassName="bg-amber-500/10 text-amber-500"
+            />
+            <DashboardCard
+              title="Completed Gigs"
+              value={myApps.filter(a => a.status === 'accepted' && (typeof a.job === 'object' && (a.job as any)?.status === 'completed')).length}
+              description="Jobs you have successfully finished"
+              icon={CheckCircle2}
+              iconClassName="bg-violet-500/10 text-violet-500"
+            />
+          </>
+        )}
+      </div>
 
       {/* Quick Applications Summary */}
       <div className="space-y-4 pt-4 border-t border-border">
@@ -176,25 +225,25 @@ export default function DashboardOverviewPage() {
             href="/dashboard/my-applications"
             className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            <span>Manage all ({myApps.length})</span>
+            <span>Manage all ({activeApps.length})</span>
             <ArrowRight size={14} />
           </Link>
         </div>
 
         {isAppsLoading ? (
           <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-        ) : myApps.length === 0 ? (
+        ) : activeApps.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
             You haven&apos;t applied to any gigs yet. Browse open opportunities near you to start earning!
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {myApps.slice(0, 3).map((app) => {
+            {activeApps.slice(0, 3).map((app) => {
               const jobObj = typeof app.job === "object" ? app.job : null;
               return (
                 <div
                   key={app._id}
-                  className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center justify-between gap-4"
+                  className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center justify-between gap-4 hover:shadow-md transition-shadow"
                 >
                   <div className="min-w-0 flex-1">
                     <h4 className="font-bold text-sm text-foreground truncate">
@@ -204,13 +253,18 @@ export default function DashboardOverviewPage() {
                       Budget: ₹{jobObj?.payment || "—"}
                     </p>
                   </div>
-                  <StatusBadge status={app.status} type="application" />
+                  <StatusBadge 
+                    status={jobObj?.status === "completed" ? "completed" : app.status} 
+                    type={jobObj?.status === "completed" ? "job" : "application"} 
+                  />
                 </div>
               );
             })}
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

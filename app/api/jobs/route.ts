@@ -32,9 +32,14 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const jobs = await getJobs();
+        const searchParams = req.nextUrl.searchParams;
+        const lat = searchParams.get("lat");
+        const lng = searchParams.get("lng");
+        const radius = searchParams.get("radius");
+
+        const jobs = await getJobs({ lat, lng, radius });
         return successResponse("Jobs fetched successfully", jobs, 200);
     }
     catch (error) {
