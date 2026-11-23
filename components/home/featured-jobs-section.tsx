@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Briefcase } from "lucide-react";
+import { ArrowRight, Briefcase, MapPin } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useJobs } from "@/hooks/use-jobs";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { JobCard } from "@/components/jobs/job-card";
 import { JobCardSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -10,13 +12,28 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/providers/I18nProvider";
 
 export function FeaturedJobsSection() {
+  const { data: session, status } = useSession();
   const { t } = useI18n();
-  const { data: jobs, isLoading, isError } = useJobs();
+  const { coords, isAvailable: isGeoAvailable, isLocating, placeName } = useGeolocation();
+
+  // Pass geolocation params when available so only nearby jobs are fetched
+  const geoParams = isGeoAvailable && coords
+    ? { lat: coords.lat, lng: coords.lng, radius: 25 }
+    : undefined;
+
+  const { data: jobsResult, isLoading, isError } = useJobs(geoParams);
+
+  if (status !== "authenticated" || !session?.user) {
+    return null;
+  }
 
   // Filter for open jobs and take top 6 newest
-  const featuredJobs = (jobs || [])
+  const featuredJobs = (jobsResult?.jobs || [])
     .filter((job) => job.status === "open")
     .slice(0, 6);
+
+  // Still waiting for geolocation — show skeleton
+  const showSkeleton = isLoading || isLocating;
 
   return (
     <section className="py-16 md:py-20 bg-secondary/60 border-t border-b border-border/60">
@@ -30,6 +47,12 @@ export function FeaturedJobsSection() {
             <p className="mt-2 text-base text-muted-foreground max-w-2xl">
               {t("featured.subtitle")}
             </p>
+            {isGeoAvailable && placeName && (
+              <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1.5">
+                <MapPin size={14} className="text-primary" />
+                <span>Showing jobs near <strong className="text-foreground">{placeName}</strong></span>
+              </p>
+            )}
           </div>
           <Link href="/jobs" className="shrink-0">
             <Button variant="outline" className="gap-2 rounded-xl">
@@ -40,7 +63,7 @@ export function FeaturedJobsSection() {
         </div>
 
         {/* Grid Content */}
-        {isLoading ? (
+        {showSkeleton ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <JobCardSkeleton key={i} />

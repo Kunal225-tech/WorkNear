@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { getApiAuthUser } from "@/lib/api-auth";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,6 +9,12 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
+  // Require authentication before processing any uploads
+  const authUser = await getApiAuthUser(request);
+  if (!authUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const files = formData.getAll("file") as File[];
@@ -43,3 +50,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
+

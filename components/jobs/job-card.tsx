@@ -8,6 +8,7 @@ import { SaveJobButton } from "@/components/jobs/save-job-button";
 import { getPostedByUser } from "@/types";
 import type { Job } from "@/types";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { formatDate } from "@/lib/format-date";
 
 interface JobCardProps {
   job: Job;
@@ -16,11 +17,8 @@ interface JobCardProps {
 export function JobCard({ job }: JobCardProps) {
   const { t } = useI18n();
   const poster = getPostedByUser(job.postedBy);
-  const formattedDate = new Date(job.requiredDate).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate =
+    formatDate(job.createdAt) ?? formatDate(job.requiredDate) ?? t("jobs.dateUnavailable");
 
   return (
     <motion.div

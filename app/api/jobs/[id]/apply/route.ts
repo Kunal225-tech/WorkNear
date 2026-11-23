@@ -8,6 +8,7 @@ import { sendMail } from "@/lib/mailer";
 import { newApplicationEmail } from "@/lib/email-templates";
 import { User } from "@/models/User";
 import { connectDB } from "@/db/connect";
+import { createNotification } from "@/actions/notifications/createNotification";
 
 interface RouteParams {
   params: Promise<{
@@ -72,7 +73,7 @@ export async function POST(
       applicant: authUser.id,
     });
 
-    // ── Send email notification to job poster ──
+    // ── Create In-App Notification & Email for job poster ──
     try {
       await connectDB();
       const poster = typeof job.postedBy === "object" && "email" in job.postedBy
@@ -80,18 +81,29 @@ export async function POST(
         : await User.findById(postedById).select("email name").lean() as any;
 
       const applicantUser = await User.findById(authUser.id).select("name").lean() as any;
+      const applicantName = applicantUser?.name || "A worker";
+
+      // Create in-app notification
+      await createNotification({
+        recipientId: postedById,
+        senderId: authUser.id,
+        type: "application_received",
+        title: "New Application",
+        message: `${applicantName} applied for your job "${job.title}".`,
+        link: `/dashboard/my-jobs`,
+      });
 
       if (poster?.email) {
         const { subject, html } = newApplicationEmail(
           poster.name || "there",
           job.title,
-          applicantUser?.name || "A worker",
+          applicantName,
           id
         );
         await sendMail({ to: poster.email, subject, html });
       }
     } catch (emailErr) {
-      console.error("[Email] Failed to send new application notification:", emailErr);
+      console.error("[Notification/Email] Failed to notify job poster:", emailErr);
     }
 
     return successResponse(

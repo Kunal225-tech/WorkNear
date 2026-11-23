@@ -6,8 +6,12 @@ import { connectDB } from "./db/connect";
 import { User } from "./models/User";
 import { authConfig } from "./auth.config";
 
+if (!process.env.AUTH_SECRET) {
+    throw new Error("AUTH_SECRET environment variable is not set. Application cannot start.");
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    secret: process.env.AUTH_SECRET || "e7dabbcad0322ec47556dc960dc468168507f504950da0ffda1c8d8be959cfdb",
+    secret: process.env.AUTH_SECRET,
     session: {
         strategy: "jwt",
     },

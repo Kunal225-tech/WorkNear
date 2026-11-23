@@ -60,10 +60,13 @@ export function JobForm({ mode, initialData }: JobFormProps) {
   };
 
   const removeImage = (index: number) => {
+    const urlToRemove = previewUrls[index];
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
-    // Note: If it's a new file, we should remove it from `files` array.
-    // This simple implementation removes it visually, but a robust one maps files to previews.
-    // For simplicity, we just clear everything if they want to reset, or we carefully filter `files` if index is >= initialData.images.length
+    
+    if (urlToRemove.startsWith("blob:")) {
+        const fileIndex = previewUrls.slice(0, index).filter(url => url.startsWith("blob:")).length;
+        setFiles(prev => prev.filter((_, i) => i !== fileIndex));
+    }
   };
 
   // Format initial requiredDate to YYYY-MM-DD for date input
@@ -75,9 +78,10 @@ export function JobForm({ mode, initialData }: JobFormProps) {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<JobFormData>({
-    resolver: zodResolver(jobFormSchema),
+    resolver: zodResolver(jobFormSchema) as any,
     defaultValues: {
       title: initialData?.title || "",
       description: initialData?.description || "",
@@ -104,7 +108,9 @@ export function JobForm({ mode, initialData }: JobFormProps) {
             const data = await res.json();
             if (data && data.display_name) {
               const locationName = data.address?.suburb || data.address?.neighbourhood || data.address?.city || data.address?.town || data.display_name;
-              setValue("location", locationName);
+              if (!getValues("location")) {
+                setValue("location", locationName);
+              }
             }
           } catch (err) {
             console.error("Reverse geocoding failed", err);
@@ -118,7 +124,7 @@ export function JobForm({ mode, initialData }: JobFormProps) {
         }
       );
     }
-  }, [mode, initialData, setValue]);
+  }, [mode, initialData, setValue, getValues]);
 
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);

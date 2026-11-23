@@ -3,8 +3,8 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import { Navbar } from "@/components/shared/navbar";
+import { Footer } from "@/components/shared/footer";
 import { useSession } from "next-auth/react";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 
@@ -122,7 +122,7 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
 
     return (
         <div className="min-h-screen flex flex-col justify-between">
-            <Navbar session={session} />
+            <Navbar />
             <div className="grow bg-zinc-50 py-12 dark:bg-zinc-950">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                     {/* Header */}

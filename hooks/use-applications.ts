@@ -39,8 +39,9 @@ export function useApplyToJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (jobId: string) => applicationService.applyToJob(jobId),
-    onSuccess: (_data, jobId) => {
+    mutationFn: ({ jobId, coverLetter }: { jobId: string; coverLetter?: string }) =>
+      applicationService.applyToJob(jobId, coverLetter),
+    onSuccess: (_data, { jobId }) => {
       queryClient.invalidateQueries({
         queryKey: applicationKeys.myApplications(),
       });

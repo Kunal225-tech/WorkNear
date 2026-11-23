@@ -190,10 +190,12 @@ export default function ProfileDashboardPage() {
                     profile.name ? profile.name.charAt(0).toUpperCase() : "U"
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                  <ShieldCheck size={14} />
-                  <span>Verified Member</span>
-                </div>
+                {profile.isVerified && (
+                  <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                    <ShieldCheck size={14} />
+                    <span>Verified Member</span>
+                  </div>
+                )}
               </div>
 
               {/* Name & Bio */}

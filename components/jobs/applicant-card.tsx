@@ -72,7 +72,7 @@ export function ApplicantCard({
                     <span>{applicant.name}</span>
                     <ExternalLink size={13} className="text-muted-foreground" />
                   </Link>
-                  {applicant.reviewCount > 0 ? (
+                  {(applicant.reviewCount ?? 0) > 0 ? (
                     <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
                       <Star size={12} className="fill-amber-500 text-amber-500" />
                       <span>{applicant.averageRating?.toFixed(1)}</span>

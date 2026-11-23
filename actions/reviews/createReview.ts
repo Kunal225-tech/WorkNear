@@ -29,8 +29,8 @@ export async function createReview({
         throw new Error("Job not found");
     }
 
-    if (job.status !== "completed" && job.status !== "assigned") {
-        throw new Error("Reviews can only be submitted for completed or assigned tasks");
+    if (job.status !== "completed") {
+        throw new Error("Reviews can only be submitted for completed tasks");
     }
 
     // Validate review target

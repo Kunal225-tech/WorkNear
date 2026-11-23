@@ -31,7 +31,7 @@ export const createJobSchema = z.object({
 
     requiredDate: z.coerce.date({
         error: "Invalid date",
-    }),
+    }).max(new Date("2100-01-01"), "Date cannot be far into the future"),
 
     images: z.array(z.string()).optional(),
 });
@@ -62,7 +62,7 @@ export const updateJobSchema = z.object({
         .max(100, "Location cannot exceed 100 characters")
         .optional(),
 
-    requiredDate: z.coerce.date().optional(),
+    requiredDate: z.coerce.date().max(new Date("2100-01-01"), "Date cannot be far into the future").optional(),
     
     status: z.enum(["open", "assigned", "completed", "cancelled"]).optional(),
     

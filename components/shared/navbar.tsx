@@ -16,6 +16,8 @@ import {
   ChevronDown,
   Moon,
   Sun,
+  HelpCircle,
+  MessageSquare,
 } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
@@ -23,10 +25,13 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { authService } from "@/services/auth.service";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { NotificationBell } from "@/components/shared/notification-bell";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { useUnreadMessageCount } from "@/hooks/use-messages";
 
 const navLinksRaw = [
   { href: "/jobs", labelKey: "nav.browseJobs" as const, icon: Search },
+  { href: "/how-it-works", labelKey: "footer.howItWorks" as const, icon: HelpCircle },
   { href: "/dashboard/post-job", labelKey: "nav.postJob" as const, icon: PlusCircle, auth: true },
   { href: "/dashboard", labelKey: "nav.dashboard" as const, icon: LayoutDashboard, auth: true },
 ];
@@ -38,6 +43,7 @@ export function Navbar() {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const unreadMessages = useUnreadMessageCount();
 
   const isLoading = status === "loading";
   const isLoggedIn = !!session?.user;
@@ -99,7 +105,9 @@ export function Navbar() {
           {isLoading ? (
             <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
           ) : isLoggedIn ? (
-            /* Profile Dropdown */
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              {/* Profile Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
@@ -172,6 +180,21 @@ export function Navbar() {
                       <User size={15} className="text-muted-foreground" />
                       {t("nav.myApplications")}
                     </Link>
+                    <Link
+                      href="/dashboard/messages"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center justify-between gap-2.5 rounded-md px-2 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <MessageSquare size={15} className="text-muted-foreground" />
+                        Messages
+                      </span>
+                      {unreadMessages > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
+                          {unreadMessages > 9 ? "9+" : unreadMessages}
+                        </span>
+                      )}
+                    </Link>
 
                     <div className="border-t border-border mt-2 pt-2">
                       <button
@@ -186,6 +209,7 @@ export function Navbar() {
                 </>
               )}
             </div>
+          </div>
           ) : (
             /* Auth Buttons */
             <div className="flex items-center gap-3">
@@ -203,6 +227,7 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 md:hidden">
+          {isLoggedIn && <NotificationBell />}
           <LanguageSwitcher />
           <Button
             variant="ghost"

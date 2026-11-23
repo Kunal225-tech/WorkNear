@@ -13,16 +13,16 @@ export function Footer() {
       title: t("footer.platform"),
       links: [
         { label: t("nav.browseJobs"), href: "/jobs" },
-        { label: t("nav.postJob"), href: "/dashboard/post-job" },
+        { label: t("nav.postJob"), href: "/post-job" },
         { label: t("nav.dashboard"), href: "/dashboard" },
       ],
     },
     {
       title: t("footer.resources"),
       links: [
-        { label: t("footer.howItWorks"), href: "/#categories" },
-        { label: t("footer.categories"), href: "/#categories" },
-        { label: t("footer.faq"), href: "/#faq" },
+        { label: t("footer.howItWorks"), href: "/how-it-works" },
+        { label: t("footer.categories"), href: "/categories" },
+        { label: t("footer.faq"), href: "/faq" },
       ],
     },
   ];
@@ -45,7 +45,7 @@ export function Footer() {
               <h3 className="text-sm font-semibold text-foreground">
                 {group.title}
               </h3>
-              <ul className="mt-3 space-y-2.5">
+              <ul className="mt-5 space-y-4">
                 {group.links.map((link) => (
                   <li key={link.label}>
                     <Link

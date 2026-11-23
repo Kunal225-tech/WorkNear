@@ -1,5 +1,3 @@
-
-
 import { auth } from "@/auth";
 import { connectDB } from "@/db/connect";
 import { Job } from "@/models/Job";

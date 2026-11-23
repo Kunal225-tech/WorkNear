@@ -1,7 +1,6 @@
-
-
 import { connectDB } from "@/db/connect";
 import { Application } from "@/models/Application";
+import "@/models/Job"; // required so Mongoose has the Job schema registered for .populate()
 
 export async function getMyApplications(applicantId: string) {
   await connectDB();

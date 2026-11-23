@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
         const lng = searchParams.get("lng");
         const radius = searchParams.get("radius");
 
-        const jobs = await getJobs({ lat, lng, radius });
-        return successResponse("Jobs fetched successfully", jobs, 200);
+        const result = await getJobs({ lat, lng, radius });
+        return successResponse("Jobs fetched successfully", result, 200);
     }
     catch (error) {
         console.error("Error fetching jobs API:", error);

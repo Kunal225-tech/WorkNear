@@ -6,17 +6,20 @@ import { Application } from "@/models/Application";
 interface CreateApplicationParams {
     job: string;
     applicant: string | undefined;
+    coverLetter?: string;
 }
 
 export async function createApplication({
     job,
     applicant,
+    coverLetter,
 }: CreateApplicationParams) {
     await connectDB();
 
     const app = await Application.create({
         job,
         applicant,
+        ...(coverLetter ? { coverLetter } : {}),
     });
 
     return JSON.parse(JSON.stringify(app));

@@ -1,5 +1,3 @@
-
-
 import { connectDB } from "@/db/connect";
 import { Job } from "@/models/Job";
 import "@/models/User";
@@ -7,25 +5,41 @@ import "@/models/User";
 export async function getJobs(params?: { lat?: string | null; lng?: string | null; radius?: string | null }) {
   await connectDB();
 
-  let query: any = {};
+  const hasGeoFilter =
+    params?.lat && params?.lng && params?.radius && params.radius !== "ALL";
 
-  if (params?.lat && params?.lng && params?.radius) {
-    const radiusInMeters = parseInt(params.radius) * 1000;
-    query.locationCoordinates = {
-      $near: {
-        $geometry: {
-          type: "Point",
-          coordinates: [parseFloat(params.lng), parseFloat(params.lat)],
+  if (hasGeoFilter) {
+    const radiusInMeters = parseInt(params.radius!) * 1000;
+    const geoQuery = {
+      status: "open",
+      locationCoordinates: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(params.lng!), parseFloat(params.lat!)],
+          },
+          $maxDistance: radiusInMeters,
         },
-        $maxDistance: radiusInMeters,
       },
+    };
+
+    const nearbyJobs = await Job.find(geoQuery)
+      .populate("postedBy", "name profileImage")
+      .lean();
+
+    return {
+      jobs: JSON.parse(JSON.stringify(nearbyJobs)),
+      nearbyMatch: nearbyJobs.length > 0,
     };
   }
 
-  const jobs = await Job.find(query)
+  const jobs = await Job.find({ status: "open" })
     .populate("postedBy", "name profileImage")
-    .sort(query.locationCoordinates ? undefined : { createdAt: -1 })
+    .sort({ createdAt: -1 })
     .lean();
 
-  return JSON.parse(JSON.stringify(jobs));
+  return {
+    jobs: JSON.parse(JSON.stringify(jobs)),
+    nearbyMatch: false,
+  };
 }
