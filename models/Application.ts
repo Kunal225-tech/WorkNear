@@ -4,6 +4,7 @@ export interface IApplication extends Document {
     job: mongoose.Types.ObjectId;
     applicant: mongoose.Types.ObjectId;
     status: "pending" | "accepted" | "rejected" | "withdrawn";
+    coverLetter?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,6 +25,13 @@ const applicationSchema = new Schema<IApplication>(
             type: String,
             enum: ["pending", "accepted", "rejected", "withdrawn"],
             default: "pending",
+        },
+
+        coverLetter: {
+            type: String,
+            trim: true,
+            maxlength: 500,
+            default: "",
         },
     },
     {

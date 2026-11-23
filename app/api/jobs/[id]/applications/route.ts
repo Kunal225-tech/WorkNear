@@ -110,9 +110,13 @@ export async function POST(
             );
         }
 
+        const body = await request.json().catch(() => ({}));
+        const coverLetter = typeof body?.coverLetter === "string" ? body.coverLetter.trim().slice(0, 500) : undefined;
+
         const application = await createApplication({
             job: id,
             applicant: authUser.id,
+            coverLetter,
         });
 
         return successResponse(

@@ -13,12 +13,14 @@ import {
   Bookmark,
   Star,
   User as UserIcon,
+  Bell,
 } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { cn } from "@/lib/utils";
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true, mode: "both" },
+  { href: "/dashboard/notifications", label: "Notifications", icon: Bell, exact: true, mode: "both" },
   { href: "/dashboard/profile", label: "My Profile", icon: UserIcon, exact: true, mode: "both" },
   { href: "/dashboard/my-jobs", label: "My Posted Jobs", icon: Briefcase, exact: false, mode: "employer" },
   { href: "/dashboard/post-job", label: "Post a Job", icon: PlusCircle, exact: true, mode: "employer" },

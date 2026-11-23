@@ -13,9 +13,34 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "WorkNear — Find Local Jobs & Hire Nearby Talent",
+  metadataBase: new URL(
+    process.env.NEXTAUTH_URL || process.env.SITE_URL || "https://worknear.com"
+  ),
+  title: {
+    default: "WorkNear — Find Local Jobs & Hire Nearby Talent",
+    template: "%s | WorkNear",
+  },
   description:
     "WorkNear connects you with verified local service professionals. Post jobs, find nearby gigs, and get work done in your neighborhood.",
+  openGraph: {
+    locale: "en_IN",
+    type: "website",
+    siteName: "WorkNear",
+    title: "WorkNear — Find Local Jobs & Hire Nearby Talent",
+    description:
+      "WorkNear connects you with verified local service professionals. Post jobs, find nearby gigs, and get work done in your neighborhood.",
+    images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WorkNear — Find Local Jobs & Hire Nearby Talent",
+    description:
+      "WorkNear connects you with verified local service professionals. Post jobs, find nearby gigs, and get work done in your neighborhood.",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: "./",
+  },
 };
 
 export default function RootLayout({

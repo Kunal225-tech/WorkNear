@@ -21,10 +21,14 @@ export function SaveJobButton({
   className,
   iconOnly = false,
 }: SaveJobButtonProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
   const toggleMutation = useToggleSaveJob();
+
+  if (status !== "authenticated" || !session?.user) {
+    return null;
+  }
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();

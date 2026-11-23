@@ -1,7 +1,4 @@
-
-
 import bcrypt from "bcryptjs";
-
 import { connectDB } from "@/db/connect";
 import { User } from "@/models/User";
 import {
@@ -60,4 +57,4 @@ export async function registerUser(data: RegisterInput) {
             message: error?.message || "An unexpected error occurred during registration.",
         };
     }
-}
+}

@@ -5,8 +5,9 @@ import { rejectApplication } from "@/actions/applications/rejectApplication";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { sendMail } from "@/lib/mailer";
 import { applicationRejectedEmail } from "@/lib/email-templates";
-import { User } from "@/models/User";
+import { createNotification } from "@/actions/notifications/createNotification";
 import { connectDB } from "@/db/connect";
+import { User } from "@/models/User";
 
 interface RouteParams {
   params: Promise<{
@@ -71,7 +72,7 @@ export async function PATCH(
 
     const updatedApplication = await rejectApplication(id);
 
-    // ── Send email notification to rejected applicant ──
+    // ── Create In-App Notification & Email for rejected applicant ──
     try {
       await connectDB();
       const applicant = application.applicant as any;
@@ -80,6 +81,18 @@ export async function PATCH(
         : String(applicant);
 
       const applicantUser = await User.findById(applicantId).select("email name").lean() as any;
+
+      if (job.title) {
+        // Create in-app notification
+        await createNotification({
+          recipientId: applicantId,
+          senderId: authUser.id,
+          type: "application_rejected",
+          title: "Application Update",
+          message: `Your application for "${job.title}" was not selected.`,
+          link: `/dashboard/my-applications`,
+        });
+      }
 
       if (applicantUser?.email && job.title) {
         const { subject, html } = applicationRejectedEmail(
@@ -90,7 +103,7 @@ export async function PATCH(
         await sendMail({ to: applicantUser.email, subject, html });
       }
     } catch (emailErr) {
-      console.error("[Email] Failed to send rejection notification:", emailErr);
+      console.error("[Notification/Email] Failed to send rejection notification:", emailErr);
     }
 
     return successResponse(

@@ -3,6 +3,7 @@ import { getApiAuthUser } from "@/lib/api-auth";
 import { asyncHandler, successResponse, errorResponse } from "@/lib/async-handler";
 import { connectDB } from "@/db/connect";
 import { Job } from "@/models/Job";
+import { Application } from "@/models/Application";
 import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 
@@ -36,7 +37,7 @@ export const POST = asyncHandler(async (req: NextRequest, ...args: any[]) => {
         return errorResponse("Job not found", 404);
     }
 
-    // Verify ownership or assignment
+    // Verify ownership
     const postedById = typeof job.postedBy === "object" && job.postedBy !== null && "_id" in job.postedBy
         ? String(job.postedBy._id)
         : String(job.postedBy);
@@ -45,8 +46,30 @@ export const POST = asyncHandler(async (req: NextRequest, ...args: any[]) => {
         return errorResponse("Forbidden: Only the task poster can change task status", 403);
     }
 
-    job.status = parseResult.data.status;
+    // Validate state transitions
+    const currentStatus = job.status;
+    const newStatus = parseResult.data.status;
+
+    if (currentStatus === "completed" || currentStatus === "cancelled") {
+        return errorResponse("Cannot change status of a completed or cancelled job", 400);
+    }
+    if (newStatus === "completed" && currentStatus !== "assigned") {
+        return errorResponse("Only assigned jobs can be marked as completed", 400);
+    }
+    if (newStatus === "assigned") {
+        if (currentStatus !== "open") {
+            return errorResponse("Invalid status transition: job must be open to be assigned", 400);
+        }
+        // Require a legitimately accepted application before setting to "assigned"
+        const acceptedApp = await Application.findOne({ job: id, status: "accepted" });
+        if (!acceptedApp) {
+            return errorResponse("Cannot assign job: no accepted applicant found. Accept an application first.", 400);
+        }
+    }
+
+    job.status = newStatus;
     await job.save();
 
     return successResponse(JSON.parse(JSON.stringify(job)), `Task marked as ${job.status}`);
 });
+

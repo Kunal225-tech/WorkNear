@@ -59,10 +59,9 @@ export default function RegisterPage() {
         name: data.name,
         email: data.email,
         password: data.password,
-        confirmPassword: data.confirmPassword,
       });
 
-      if (response.success || response.message) {
+      if (response.success) {
         toast.success("Account created successfully! Logging you in...");
 
         // 2. Automatically sign in
@@ -78,6 +77,8 @@ export default function RegisterPage() {
           toast.info("Please sign in with your new account credentials.");
           router.push("/login");
         }
+      } else {
+        toast.error(response.message || "Registration failed. Please try again.");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to register. Email may already be in use.");

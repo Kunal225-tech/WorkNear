@@ -1,13 +1,18 @@
 import api from "@/lib/axios";
 import type { ApiResponse, Job, CreateJobInput, UpdateJobInput, ToggleSaveResponse } from "@/types";
 
+export interface JobsListResult {
+  jobs: Job[];
+  nearbyMatch: boolean;
+}
+
 export const jobService = {
   /**
    * Fetch all jobs.
    * GET /api/jobs
    */
-  async getJobs(params?: { lat?: number; lng?: number; radius?: number }): Promise<Job[]> {
-    const response = await api.get<ApiResponse<Job[]>>("/jobs", { params });
+  async getJobs(params?: { lat?: number; lng?: number; radius?: number }): Promise<JobsListResult> {
+    const response = await api.get<ApiResponse<JobsListResult>>("/jobs", { params });
     return response.data.data;
   },
 

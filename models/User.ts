@@ -49,7 +49,6 @@ const UserSchema = new Schema(
             default: "",
             trim: true,
         },
-
         skills: {
             type: [String],
             default: [],
@@ -59,17 +58,14 @@ const UserSchema = new Schema(
             type: Boolean,
             default: false,
         },
-
         savedJobs: {
             type: [{ type: Schema.Types.ObjectId, ref: "Job" }],
             default: [],
         },
-
         averageRating: {
             type: Number,
             default: 0,
         },
-
         reviewCount: {
             type: Number,
             default: 0,

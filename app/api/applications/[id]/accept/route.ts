@@ -5,8 +5,9 @@ import { acceptApplication } from "@/actions/applications/acceptApplication";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { sendMail } from "@/lib/mailer";
 import { applicationAcceptedEmail } from "@/lib/email-templates";
-import { User } from "@/models/User";
+import { createNotification } from "@/actions/notifications/createNotification";
 import { connectDB } from "@/db/connect";
+import { User } from "@/models/User";
 
 interface RouteParams {
   params: Promise<{
@@ -71,7 +72,7 @@ export async function PATCH(
 
     const updatedApplication = await acceptApplication(id);
 
-    // ── Send email notification to accepted applicant ──
+    // ── Create In-App Notification & Email for accepted applicant ──
     try {
       await connectDB();
       const applicant = application.applicant as any;
@@ -81,6 +82,18 @@ export async function PATCH(
 
       const applicantUser = await User.findById(applicantId).select("email name").lean() as any;
       const posterUser = await User.findById(authUser.id).select("name").lean() as any;
+
+      if (job.title) {
+        // Create in-app notification
+        await createNotification({
+          recipientId: applicantId,
+          senderId: authUser.id,
+          type: "application_accepted",
+          title: "Application Accepted!",
+          message: `Your application for "${job.title}" has been accepted.`,
+          link: `/dashboard/my-applications`,
+        });
+      }
 
       if (applicantUser?.email && job.title) {
         const { subject, html } = applicationAcceptedEmail(
@@ -92,7 +105,7 @@ export async function PATCH(
         await sendMail({ to: applicantUser.email, subject, html });
       }
     } catch (emailErr) {
-      console.error("[Email] Failed to send accepted notification:", emailErr);
+      console.error("[Notification/Email] Failed to send accepted notification:", emailErr);
     }
 
     return successResponse(

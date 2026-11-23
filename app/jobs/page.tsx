@@ -14,57 +14,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useJobs } from "@/hooks/use-jobs";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 import { useI18n } from "@/components/providers/I18nProvider";
 import type { Job, JobCategory, JobStatus } from "@/types";
 
+type LocationSource = "auto" | "manual" | "none";
+
 function JobsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedRadius, setSelectedRadius] = useState<string>("10");
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-
-  useEffect(() => {
-    if (selectedRadius !== "ALL" && !userLocation) {
-      if (!navigator.geolocation) {
-        setLocationError("Geolocation is not supported");
-        setSelectedRadius("ALL");
-        return;
-      }
-      setIsLocating(true);
-      setLocationError(null);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
-          setIsLocating(false);
-        },
-        (error) => {
-          console.error(error);
-          setLocationError("Location access denied or unavailable. Showing all regions.");
-          setIsLocating(false);
-        }
-      );
-    }
-  }, [selectedRadius, userLocation]);
-
-  const queryParams = useMemo(() => {
-    if (userLocation) {
-      return { lat: userLocation.lat, lng: userLocation.lng, radius: parseInt(selectedRadius) };
-    }
-    return undefined;
-  }, [selectedRadius, userLocation]);
-
-  const { data: jobs, isLoading: isJobsLoading, isError, refetch } = useJobs(queryParams);
-  const isLoading = isJobsLoading || isLocating;
   const { t } = useI18n();
 
   // URL state defaults
   const initialSearch = searchParams.get("search") || "";
   const initialLocation = searchParams.get("location") || "";
   const initialCategory = searchParams.get("category") || "ALL";
+  const hasUrlLocation = initialLocation.trim().length > 0;
 
+  const {
+    status: geoStatus,
+    coords: userLocation,
+    placeName,
+    isLocating,
+    isAvailable: isGeoAvailable,
+  } = useGeolocation({ enabled: !hasUrlLocation });
+
+  const [selectedRadius, setSelectedRadius] = useState<string>("10");
+  const [locationSource, setLocationSource] = useState<LocationSource>(
+    hasUrlLocation ? "manual" : "auto"
+  );
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [locationQuery, setLocationQuery] = useState(initialLocation);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
@@ -73,6 +52,52 @@ function JobsPageContent() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const itemsPerPage = 9;
+
+  // Auto-fill location field when GPS resolves
+  useEffect(() => {
+    if (locationSource === "auto" && placeName) {
+      setLocationQuery(placeName);
+    }
+  }, [locationSource, placeName]);
+
+  // Fall back to manual search when geolocation is denied or unavailable
+  useEffect(() => {
+    if (
+      locationSource === "auto" &&
+      (geoStatus === "denied" || geoStatus === "unsupported" || geoStatus === "error")
+    ) {
+      setLocationSource("none");
+    }
+  }, [geoStatus, locationSource]);
+
+  const useGeoFilter =
+    locationSource === "auto" &&
+    isGeoAvailable &&
+    userLocation !== null;
+
+  const queryParams = useMemo(() => {
+    if (useGeoFilter && userLocation) {
+      return {
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        radius: parseInt(selectedRadius) || 10,
+      };
+    }
+    return undefined;
+  }, [useGeoFilter, userLocation, selectedRadius]);
+
+  const { data: jobsResult, isLoading: isJobsLoading, isError, refetch } = useJobs(queryParams);
+  const jobs = jobsResult?.jobs;
+  const nearbyMatch = jobsResult?.nearbyMatch ?? false;
+  const noNearbyJobs = useGeoFilter && !isJobsLoading && !isLocating && jobsResult !== undefined && !nearbyMatch;
+  const isLoading = isJobsLoading || (locationSource === "auto" && isLocating);
+
+  const locationError =
+    geoStatus === "denied"
+      ? t("jobs.locationDenied")
+      : geoStatus === "unsupported" || geoStatus === "error"
+        ? t("jobs.locationUnavailable")
+        : null;
 
   // Sync state if URL search parameters change
   useEffect(() => {
@@ -93,8 +118,8 @@ function JobsPageContent() {
           const matchDesc = job.description.toLowerCase().includes(q);
           if (!matchTitle && !matchDesc) return false;
         }
-        // Location filter
-        if (locationQuery.trim()) {
+        // Location text filter — skip when results are already geo-filtered server-side
+        if (locationSource === "manual" && locationQuery.trim()) {
           const l = locationQuery.toLowerCase();
           if (!job.location.toLowerCase().includes(l)) return false;
         }
@@ -118,7 +143,7 @@ function JobsPageContent() {
         }
         return 0;
       });
-  }, [jobs, searchQuery, locationQuery, selectedCategory, selectedStatus, sortBy]);
+  }, [jobs, searchQuery, locationQuery, locationSource, selectedCategory, selectedStatus, sortBy]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
@@ -129,13 +154,36 @@ function JobsPageContent() {
 
   const handleResetFilters = () => {
     setSearchQuery("");
-    setLocationQuery("");
+    setLocationQuery(placeName || "");
     setSelectedCategory("ALL");
-    setSelectedStatus("ALL");
+    setSelectedStatus("open");
     setSelectedRadius("10");
+    setLocationSource(isGeoAvailable ? "auto" : "none");
     setSortBy("newest");
     setCurrentPage(1);
     router.push("/jobs");
+  };
+
+  const handleLocationChange = (value: string) => {
+    setLocationQuery(value);
+    setLocationSource("manual");
+    setCurrentPage(1);
+  };
+
+  const handleUseMyLocation = () => {
+    if (isGeoAvailable && userLocation) {
+      setLocationSource("auto");
+      setLocationQuery(placeName || "");
+      setSelectedRadius("10");
+      setCurrentPage(1);
+    } else if (typeof navigator !== "undefined" && navigator.geolocation) {
+      setLocationSource("auto");
+      setSelectedRadius("10");
+      navigator.geolocation.getCurrentPosition(
+        () => window.location.reload(),
+        () => setLocationSource("none")
+      );
+    }
   };
 
   return (
@@ -222,22 +270,42 @@ function JobsPageContent() {
 
               {/* Location Search */}
               <div className="relative">
-                <MapPin size={16} className="absolute left-3 top-3 text-muted-foreground" />
-                <Input
-                  placeholder={t("jobs.location")}
-                  value={locationQuery}
-                  onChange={(e) => {
-                    setLocationQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="pl-9 h-10 rounded-xl"
+                <MapPin
+                  size={16}
+                  className={cn(
+                    "absolute left-3 top-3",
+                    locationSource === "auto" && isGeoAvailable
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )}
                 />
-                {locationQuery && (
+                <Input
+                  placeholder={
+                    isLocating ? t("jobs.detectingLocation") : t("jobs.location")
+                  }
+                  value={locationQuery}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className={cn(
+                    "pl-9 h-10 rounded-xl",
+                    locationSource === "auto" && isGeoAvailable && "border-primary/50 bg-primary/5"
+                  )}
+                />
+                {locationQuery && locationSource === "manual" && (
                   <button
                     onClick={() => setLocationQuery("")}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                   >
                     <X size={14} />
+                  </button>
+                )}
+                {locationSource === "manual" && isGeoAvailable && (
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    title={t("jobs.useMyLocation")}
+                    className="absolute right-3 top-2.5 text-primary hover:text-primary/80"
+                  >
+                    <MapPin size={14} />
                   </button>
                 )}
               </div>
@@ -247,15 +315,27 @@ function JobsPageContent() {
                 <Select
                   value={selectedRadius}
                   onChange={(e) => {
-                    setSelectedRadius(e.target.value);
+                    const value = e.target.value;
+                    setSelectedRadius(value);
+                    if (isGeoAvailable) {
+                      setLocationSource("auto");
+                      if (placeName) setLocationQuery(placeName);
+                    }
                     setCurrentPage(1);
                   }}
                   className="rounded-xl h-10"
                 >
-                  <option value="5">Within 5 km</option>
-                  <option value="10">Within 10 km</option>
+                  <option value="5">{t("jobs.within5km")}</option>
+                  <option value="10">{t("jobs.within10km")}</option>
+                  <option value="25">{t("jobs.within25km")}</option>
+                  <option value="50">{t("jobs.within50km")}</option>
                 </Select>
-                {locationError && <span className="text-[10px] text-destructive px-1">{locationError}</span>}
+                {locationError && (
+                  <span className="text-[10px] text-destructive px-1">{locationError}</span>
+                )}
+                {locationSource === "auto" && isGeoAvailable && (
+                  <span className="text-[10px] text-primary px-1">{t("jobs.usingYourLocation")}</span>
+                )}
               </div>
 
               {/* Category Dropdown */}
@@ -316,7 +396,7 @@ function JobsPageContent() {
                     </span>
                   )}
                   <span className="rounded-md bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-500">
-                    Within {selectedRadius} km
+                    {t("jobs.withinKm").replace("{km}", selectedRadius)}
                   </span>
                   {selectedStatus !== "ALL" && (
                     <span className="rounded-md bg-muted px-2 py-0.5 font-medium text-foreground">
@@ -352,9 +432,44 @@ function JobsPageContent() {
               <div>
                 <span className="font-semibold text-foreground">{filteredJobs.length}</span>{" "}
                 {filteredJobs.length === 1 ? "job found" : "jobs found"}
-                {isLocating && <span className="ml-2 animate-pulse text-amber-500">(Locating...)</span>}
+                {isLocating && (
+                  <span className="ml-2 animate-pulse text-primary">{t("jobs.detectingLocation")}</span>
+                )}
+                {!isLocating && useGeoFilter && nearbyMatch && (
+                  <span className="ml-2 text-primary">{t("jobs.nearYou")}</span>
+                )}
               </div>
             </div>
+
+            {noNearbyJobs && (
+              <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
+                <p>{t("jobs.noNearbyJobs").replace("{km}", selectedRadius)}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedRadius !== "50" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => {
+                        const next = selectedRadius === "5" ? "10" : selectedRadius === "10" ? "25" : "50";
+                        setSelectedRadius(next);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      {t("jobs.expandRadius")}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={() => router.push("/post-job")}
+                  >
+                    {t("nav.postJob")}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isLoading ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -373,12 +488,27 @@ function JobsPageContent() {
             ) : paginatedJobs.length === 0 ? (
               <EmptyState
                 icon={Briefcase}
-                title="No jobs match your search"
-                description="Try adjusting your keywords, location, or filters."
+                title={noNearbyJobs ? t("jobs.noNearbyTitle") : t("jobs.noMatchTitle")}
+                description={noNearbyJobs ? t("jobs.noNearbyDesc") : t("jobs.noMatchDesc")}
                 action={
-                  <Button onClick={handleResetFilters} className="rounded-xl">
-                    Clear Filters
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {noNearbyJobs && selectedRadius !== "50" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const next = selectedRadius === "5" ? "10" : selectedRadius === "10" ? "25" : "50";
+                          setSelectedRadius(next);
+                          setCurrentPage(1);
+                        }}
+                        className="rounded-xl"
+                      >
+                        {t("jobs.expandRadius")}
+                      </Button>
+                    )}
+                    <Button onClick={handleResetFilters} className="rounded-xl">
+                      {t("jobs.clearFilters")}
+                    </Button>
+                  </div>
                 }
               />
             ) : (

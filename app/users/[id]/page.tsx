@@ -75,7 +75,9 @@ export default function PublicProfilePage({ params }: PublicProfilePageProps) {
                       <div className="mb-1">
                         <div className="flex items-center gap-2">
                           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">{user.name}</h1>
-                          <ShieldCheck size={20} className="text-emerald-500 shrink-0" title="Verified Community Member" />
+                          <span title="Verified Community Member">
+                            <ShieldCheck size={20} className="text-emerald-500 shrink-0" />
+                          </span>
                         </div>
                         {formattedJoinDate && (
                           <p className="text-xs text-muted-foreground mt-0.5">

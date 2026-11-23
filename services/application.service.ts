@@ -6,9 +6,10 @@ export const applicationService = {
    * Apply to a job.
    * POST /api/jobs/:jobId/apply
    */
-  async applyToJob(jobId: string): Promise<Application> {
+  async applyToJob(jobId: string, coverLetter?: string): Promise<Application> {
     const response = await api.post<ApiResponse<Application>>(
-      `/jobs/${jobId}/apply`
+      `/jobs/${jobId}/applications`,
+      coverLetter ? { coverLetter } : {}
     );
     return response.data.data;
   },
@@ -30,7 +31,7 @@ export const applicationService = {
    */
   async acceptApplication(id: string): Promise<Application> {
     const response = await api.patch<ApiResponse<Application>>(
-      `/applications/${id}`
+      `/applications/${id}/accept`
     );
     return response.data.data;
   },

@@ -1,3 +1,4 @@
+// @ts-expect-error nodemailer types omitted for lightweight bundle
 import nodemailer from "nodemailer";
 
 const EMAIL_FROM = process.env.EMAIL_FROM;

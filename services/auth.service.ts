@@ -29,7 +29,11 @@ export const authService = {
 
     return {
       ok: !result.error,
-      error: result.error || undefined,
+      error: result.error
+        ? result.error === "CredentialsSignin"
+          ? "Invalid email or password. Please try again."
+          : result.error
+        : undefined,
     };
   },
 

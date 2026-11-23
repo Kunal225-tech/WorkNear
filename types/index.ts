@@ -14,6 +14,8 @@ export interface User {
   authProvider?: "credentials" | "google";
   isVerified?: boolean;
   savedJobs?: string[];
+  averageRating?: number;
+  reviewCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -67,6 +69,7 @@ export interface Application {
   job: Job | string;
   applicant: User | string;
   status: ApplicationStatus;
+  coverLetter?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -96,6 +99,7 @@ export interface UpdateJobInput {
   payment?: number;
   location?: string;
   requiredDate?: string;
+  status?: JobStatus;
   images?: string[];
 }
 

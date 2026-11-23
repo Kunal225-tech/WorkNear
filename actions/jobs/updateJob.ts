@@ -1,5 +1,3 @@
-
-
 import { connectDB } from "@/db/connect";
 import { Job } from "@/models/Job";
 import "@/models/User";
@@ -15,9 +13,7 @@ export async function updateJob({
     ...jobData
 }: UpdateJobParams) {
     await connectDB();
-
     let updatePayload: any = { ...jobData };
-
     if (jobData.location) {
         const coords = await geocodeLocation(jobData.location);
         if (coords) {
