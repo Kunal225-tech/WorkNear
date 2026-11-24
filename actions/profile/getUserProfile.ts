@@ -1,5 +1,3 @@
-
-
 import { connectDB } from "@/db/connect";
 import { User } from "@/models/User";
 import { Review } from "@/models/Review";
