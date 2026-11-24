@@ -5,6 +5,7 @@ export interface UserProfile extends User {
   reviewCount: number;
   averageRating: number;
   reviews: Review[];
+  isPhoneMasked?: boolean;
 }
 
 export interface UpdateProfileInput {

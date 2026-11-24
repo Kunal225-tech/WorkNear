@@ -234,7 +234,7 @@ export default function JobDetailClient({ id, initialJob }: JobDetailClientProps
 
                     <div className="flex flex-col sm:items-end gap-2 shrink-0">
                       {!isLoggedIn ? (
-                        <Link href="/login">
+                        <Link href={`/login?callbackUrl=/jobs/${id}`}>
                           <Button size="lg" className="w-full sm:w-auto rounded-lg gap-2 px-8 font-medium">
                             <span>{t("jobDetail.signInApply")}</span>
                           </Button>

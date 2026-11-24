@@ -41,8 +41,8 @@ export const authService = {
    * Login with Google OAuth.
    * Redirects to Google consent screen.
    */
-  async loginWithGoogle(): Promise<void> {
-    await signIn("google", { callbackUrl: "/dashboard" });
+  async loginWithGoogle(callbackUrl: string = "/jobs"): Promise<void> {
+    await signIn("google", { callbackUrl });
   },
 
   /**

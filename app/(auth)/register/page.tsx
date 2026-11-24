@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,8 +29,15 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawCallback = searchParams.get("callbackUrl");
+  // Validate callbackUrl to prevent open redirects
+  const callbackUrl = rawCallback && rawCallback.startsWith("/") && !rawCallback.startsWith("//") && !rawCallback.startsWith("/register")
+    ? rawCallback
+    : "/jobs";
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -71,11 +78,11 @@ export default function RegisterPage() {
         });
 
         if (loginResult.ok) {
-          router.push("/jobs");
+          router.push(callbackUrl);
           router.refresh();
         } else {
           toast.info("Please sign in with your new account credentials.");
-          router.push("/login");
+          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
       } else {
         toast.error(response.message || "Registration failed. Please try again.");
@@ -90,7 +97,7 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      await authService.loginWithGoogle();
+      await authService.loginWithGoogle(callbackUrl);
     } catch (error: any) {
       toast.error("Failed to connect with Google.");
       setIsGoogleLoading(false);
@@ -262,11 +269,26 @@ export default function RegisterPage() {
       <CardFooter className="flex flex-col items-center border-t border-border/60 pt-4 text-center text-sm text-muted-foreground">
         <div>
           {t("auth.hasAccount")} {" "}
-          <Link href="/login" className="font-semibold text-primary hover:underline">
+          <Link
+            href={callbackUrl !== "/jobs" ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"}
+            className="font-semibold text-primary hover:underline"
+          >
             {t("auth.signIn")}
           </Link>
         </div>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

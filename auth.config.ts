@@ -11,7 +11,7 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const nextUrl = (request as any)?.nextUrl;
             if (!nextUrl || !nextUrl.pathname) return true;
-            const protectedRoutes = ["/dashboard", "/post-job", "/profile", "/my-jobs", "/my-applications", "/jobs"];
+            const protectedRoutes = ["/dashboard", "/profile", "/my-jobs", "/my-applications"];
             const isProtected = protectedRoutes.some((route) =>
                 nextUrl.pathname.startsWith(route)
             );

@@ -119,10 +119,24 @@ export default function PublicProfilePage({ params }: PublicProfilePageProps) {
                       </span>
                     )}
                     {user.phone && (
-                      <span className="flex items-center gap-1.5 font-medium text-foreground">
-                        <Phone size={15} className="text-primary" />
-                        <span>{user.phone}</span>
-                      </span>
+                      user.isPhoneMasked ? (
+                        <Link
+                          href={`/login?callbackUrl=/users/${user._id}`}
+                          className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/20"
+                        >
+                          <Phone size={14} className="text-primary" />
+                          <span>{user.phone}</span>
+                          <span className="text-[11px] text-muted-foreground ml-1">(Sign in to view)</span>
+                        </Link>
+                      ) : (
+                        <a
+                          href={`tel:${user.phone}`}
+                          className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary transition-colors"
+                        >
+                          <Phone size={15} className="text-primary" />
+                          <span>{user.phone}</span>
+                        </a>
+                      )
                     )}
                   </div>
 
