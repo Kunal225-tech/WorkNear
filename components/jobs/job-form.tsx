@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, IndianRupee, MapPin, Calendar, ImagePlus, X } from "lucide-react";
+import { Loader2, ArrowRight, IndianRupee, MapPin, Calendar, ImagePlus, X, Sparkles } from "lucide-react";
 import { createJobSchema } from "@/validators/job.schema";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 import { Button } from "@/components/ui/button";
@@ -42,12 +43,15 @@ interface JobFormProps {
 
 export function JobForm({ mode, initialData }: JobFormProps) {
   const router = useRouter();
+  const { data: session, status: authStatus } = useSession();
+  const isLoggedIn = authStatus === "authenticated" && !!session?.user;
   const createMutation = useCreateJob();
   const updateMutation = useUpdateJob();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>(initialData?.images || []);
   const [isLocating, setIsLocating] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -92,6 +96,39 @@ export function JobForm({ mode, initialData }: JobFormProps) {
     },
   });
 
+  // Restore draft from localStorage for new jobs
+  useEffect(() => {
+    if (mode === "create" && !initialData && typeof window !== "undefined") {
+      try {
+        const savedDraft = localStorage.getItem("worknear_job_draft");
+        if (savedDraft) {
+          const draft = JSON.parse(savedDraft);
+          if (draft.title) setValue("title", draft.title);
+          if (draft.description) setValue("description", draft.description);
+          if (draft.category) setValue("category", draft.category);
+          if (draft.payment) setValue("payment", draft.payment);
+          if (draft.location) setValue("location", draft.location);
+          if (draft.requiredDate) setValue("requiredDate", draft.requiredDate);
+          setHasDraft(true);
+        }
+      } catch (err) {
+        console.error("Failed to restore job draft", err);
+      }
+    }
+  }, [mode, initialData, setValue]);
+
+  const handleClearDraft = () => {
+    try {
+      localStorage.removeItem("worknear_job_draft");
+    } catch {}
+    setHasDraft(false);
+    setValue("title", "");
+    setValue("description", "");
+    setValue("payment", "" as any);
+    setValue("location", "");
+    toast.info("Saved job draft cleared.");
+  };
+
   // Auto-detect location for new jobs
   useEffect(() => {
     if (mode === "create" && !initialData?.location) {
@@ -129,6 +166,16 @@ export function JobForm({ mode, initialData }: JobFormProps) {
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);
     try {
+      // If user is not signed in, save draft to localStorage and prompt login
+      if (!isLoggedIn && mode === "create") {
+        try {
+          localStorage.setItem("worknear_job_draft", JSON.stringify(data));
+        } catch {}
+        toast.success("Job draft saved! Sign in to publish your job.");
+        router.push("/login?callbackUrl=/post-job");
+        return;
+      }
+
       let uploadedImageUrls: string[] = initialData?.images || [];
 
       // Upload new files to Cloudinary via our API route
@@ -162,6 +209,9 @@ export function JobForm({ mode, initialData }: JobFormProps) {
           requiredDate: data.requiredDate,
           images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined,
         } as any);
+        try {
+          localStorage.removeItem("worknear_job_draft");
+        } catch {}
         toast.success("Job posted successfully! Workers can now discover your task.");
         router.push(`/jobs/${newJob._id}`);
       } else if (mode === "edit" && initialData) {
@@ -191,6 +241,30 @@ export function JobForm({ mode, initialData }: JobFormProps) {
     <Card className="shadow-lg border-border/80">
       <CardContent className="p-6 sm:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Draft Restored Banner */}
+          {hasDraft && (
+            <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 p-3.5 text-sm text-primary">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="shrink-0" />
+                <span>Restored your saved job draft! Complete any details and publish.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="text-xs font-bold underline hover:opacity-80 shrink-0 ml-3"
+              >
+                Clear draft
+              </button>
+            </div>
+          )}
+
+          {/* Guest helper notice */}
+          {!isLoggedIn && mode === "create" && !hasDraft && (
+            <div className="rounded-xl bg-muted/60 border border-border p-3.5 text-xs text-muted-foreground flex items-center justify-between gap-2">
+              <span>You can fill out your job details now. You&apos;ll be prompted to sign in or create an account right before publishing.</span>
+            </div>
+          )}
+
           {/* Job Title */}
           <div className="space-y-2">
             <Label htmlFor="title" className="font-semibold">
@@ -371,6 +445,11 @@ export function JobForm({ mode, initialData }: JobFormProps) {
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>{mode === "create" ? "Posting Job..." : "Saving Changes..."}</span>
+                </>
+              ) : !isLoggedIn && mode === "create" ? (
+                <>
+                  <span>Save Draft &amp; Sign In</span>
+                  <ArrowRight size={16} />
                 </>
               ) : (
                 <>

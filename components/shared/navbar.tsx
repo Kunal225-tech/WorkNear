@@ -31,8 +31,8 @@ import { useUnreadMessageCount } from "@/hooks/use-messages";
 
 const navLinksRaw = [
   { href: "/jobs", labelKey: "nav.browseJobs" as const, icon: Search },
+  { href: "/post-job", labelKey: "nav.postJob" as const, icon: PlusCircle },
   { href: "/how-it-works", labelKey: "footer.howItWorks" as const, icon: HelpCircle },
-  { href: "/dashboard/post-job", labelKey: "nav.postJob" as const, icon: PlusCircle, auth: true },
   { href: "/dashboard", labelKey: "nav.dashboard" as const, icon: LayoutDashboard, auth: true },
 ];
 
@@ -213,12 +213,12 @@ export function Navbar() {
           ) : (
             /* Auth Buttons */
             <div className="flex items-center gap-3">
-              <Link href="/login">
+              <Link href={pathname && pathname !== "/login" && pathname !== "/register" ? `/login?callbackUrl=${encodeURIComponent(pathname)}` : "/login"}>
                 <Button variant="ghost" size="sm" className="font-semibold text-muted-foreground hover:text-foreground">
                   {t("nav.signIn")}
                 </Button>
               </Link>
-              <Link href="/register">
+              <Link href={pathname && pathname !== "/login" && pathname !== "/register" ? `/register?callbackUrl=${encodeURIComponent(pathname)}` : "/register"}>
                 <Button size="sm" className="font-semibold">{t("nav.signUp")}</Button>
               </Link>
             </div>
@@ -302,12 +302,18 @@ export function Navbar() {
                 </>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Link
+                    href={pathname && pathname !== "/login" && pathname !== "/register" ? `/login?callbackUrl=${encodeURIComponent(pathname)}` : "/login"}
+                    onClick={() => setMobileOpen(false)}
+                  >
                     <Button variant="outline" className="w-full justify-center">
                       {t("nav.signIn")}
                     </Button>
                   </Link>
-                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                  <Link
+                    href={pathname && pathname !== "/login" && pathname !== "/register" ? `/register?callbackUrl=${encodeURIComponent(pathname)}` : "/register"}
+                    onClick={() => setMobileOpen(false)}
+                  >
                     <Button className="w-full justify-center">{t("nav.signUp")}</Button>
                   </Link>
                 </div>

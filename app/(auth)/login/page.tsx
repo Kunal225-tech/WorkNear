@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,8 +22,15 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawCallback = searchParams.get("callbackUrl");
+  // Validate callbackUrl to prevent open redirects
+  const callbackUrl = rawCallback && rawCallback.startsWith("/") && !rawCallback.startsWith("//") && !rawCallback.startsWith("/login")
+    ? rawCallback
+    : "/jobs";
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +54,7 @@ export default function LoginPage() {
       const result = await authService.login(data);
       if (result.ok) {
         toast.success("Welcome back! Signed in successfully.");
-        router.push("/jobs");
+        router.push(callbackUrl);
         router.refresh();
       } else {
         toast.error(result.error || "Invalid email or password.");
@@ -62,7 +69,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      await authService.loginWithGoogle();
+      await authService.loginWithGoogle(callbackUrl);
     } catch (error: any) {
       toast.error("Failed to connect with Google.");
       setIsGoogleLoading(false);
@@ -188,11 +195,26 @@ export default function LoginPage() {
       <CardFooter className="flex flex-col items-center border-t border-border/60 pt-4 text-center text-sm text-muted-foreground">
         <div>
           {t("auth.noAccount")} {" "}
-          <Link href="/register" className="font-semibold text-primary hover:underline">
+          <Link
+            href={callbackUrl !== "/jobs" ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
+            className="font-semibold text-primary hover:underline"
+          >
             {t("auth.createAccount")}
           </Link>
         </div>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

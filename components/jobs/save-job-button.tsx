@@ -27,7 +27,24 @@ export function SaveJobButton({
   const toggleMutation = useToggleSaveJob();
 
   if (status !== "authenticated" || !session?.user) {
-    return null;
+    return (
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toast.info("Please sign in to save jobs to your bookmarks.");
+          router.push(`/login?callbackUrl=/jobs/${jobId}`);
+        }}
+        className={cn(
+          "inline-flex items-center justify-center rounded-lg border border-border/80 bg-background/80 p-2 text-muted-foreground backdrop-blur-sm transition-all hover:bg-muted hover:text-foreground hover:scale-105 active:scale-95",
+          className
+        )}
+        title="Sign in to save job"
+        type="button"
+      >
+        <Bookmark size={18} />
+      </button>
+    );
   }
 
   const handleToggle = async (e: React.MouseEvent) => {
